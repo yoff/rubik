@@ -416,15 +416,26 @@ let qtest =
 let face style p1 p2 p3 p4 =
   p1 @ List.tail p2 @ List.tail p3 @ List.tail p4 |> toQLoop style
 
+let mirrorXY v =
+  { x = v.y; y = v.x; z = v.z }
+
 let faceStyle colour =
   sprintf "\"stroke:black; stroke-width:3; fill:%s\"" colour
 
-[ cornerLine 4 |> List.map flipZ
+[ cornerLine 4 |> List.map (flipY >> flipX)
   cornerLine 4 |> List.map rotate
-  faceLine 4 |> List.map rotate
+  faceLine 4 |> List.map (mirrorXY >> rotate)
   faceLine 4 ]
 |> List.mapi (fun i -> List.map (toView >> proj >> toScreen) >> toQPath styles.[i % 4])
 |> String.concat "\n"
 |> toSVG
 |> saveSVG "facetest.svg"
-  
+
+let t = toView >> proj >> toScreen |> List.map
+face (faceStyle "green")
+  (cornerLine 4 |> List.map (flipY >> flipX) |> t)
+  (cornerLine 4 |> List.map rotate |> t |> List.rev)
+  (faceLine 4 |> t |> List.rev)
+  (faceLine 4 |> List.map (mirrorXY >> rotate) |> t)
+|> toSVG
+|> saveSVG "facetest1.svg"
