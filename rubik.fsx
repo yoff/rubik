@@ -331,15 +331,15 @@ let toQs points =
     ps
     |> pairs
     |> List.map (fun ((cx, cy), (px,py)) -> sprintf "Q %f %f %f %f" cx cy px py)
-    |> String.concat "\n    "
-    |> sprintf "M %f %f\n    %s" x y
+    |> String.concat "\n       "
+    |> sprintf "M %f %f\n       %s" x y
 
 let toQPath style points =
   toQs points |> wrapPath style
 
 let toQLoop style points =
   toQs points
-  |> sprintf "%s\n   z"
+  |> sprintf "%s\n       z"
   |> wrapPath style
 
 arcTest 4 100.0
@@ -373,21 +373,24 @@ let edgeLine n =
 
 let faceLine n =
   let x = sin cv
-  let dv = pi / 4.0 - cv
-  let v i = cv + (float i)*dv/(float n)
+  let tv = tan cv |> asin
+  let dv = pi / 4.0 - tv
+  let rc = cos cv
+  let v i = tv + (float i)*dv/(float n)
   let l = dv / float n |> tanLen
   [0..n]
-  |> List.map (fun i -> { x = -x; y = cos (v i); z = -sin (v i) })
+  |> List.map (fun i -> { x = -x; y = rc * cos (v i); z = -rc * sin (v i) })
   |> mapEveryOther false (fun v -> { x = v.x; y = l*v.y; z = l*v.z })
 
 let centerLine n =
   let x = sin cv
-  let dv = 2.0 * cv
+  let tv = tan cv |> asin
+  let dv = 2.0 * tv
   let rc = cos cv
-  let v i = cv - (float i)*dv/(float n)
+  let v i = tv - (float i)*dv/(float n)
   let l = dv / float n |> tanLen
   [0..n]
-  |> List.map (fun i -> { x = -x; y = cos (v i); z = rc * sin (v i) })
+  |> List.map (fun i -> { x = -x; y = rc * cos (v i); z = rc * sin (v i) })
   |> mapEveryOther false (fun v -> { x = v.x; y = l*v.y; z = l*v.z })
 
 let styles =
@@ -413,11 +416,20 @@ let qtest =
 |> toSVG
 |> saveSVG "qtest.svg"
 
+let toFace p1 p2 p3 p4 =
+  p1 @ List.tail p2 @ List.tail p3 @ List.tail p4
+
 let face style p1 p2 p3 p4 =
-  p1 @ List.tail p2 @ List.tail p3 @ List.tail p4 |> toQLoop style
+  toFace p1 p2 p3 p4 |> toQLoop style
 
 let mirrorXY v =
   { x = v.y; y = v.x; z = v.z }
+
+let mirrorXZ v =
+  { x = v.z; y = v.y; z = v.x }
+
+let mirrorYZ v =
+  { x = v.x; y = v.z; z = v.y }
 
 let faceStyle colour =
   sprintf "\"stroke:black; stroke-width:3; fill:%s\"" colour
@@ -439,3 +451,81 @@ face (faceStyle "green")
   (faceLine 4 |> List.map (mirrorXY >> rotate) |> t)
 |> toSVG
 |> saveSVG "facetest1.svg"
+
+let up = id
+let down = List.rev
+let rot = List.map rotate
+let mXY = List.map mirrorXY
+let mXZ = List.map mirrorXZ
+let mYZ = List.map mirrorYZ
+let fXY = List.map (flipY >> flipX)
+let fX = List.map flipX
+let fY = List.map flipY
+let fZ = List.map flipZ
+
+let corner n =
+  toFace
+    (up (cornerLine n |> fXY))
+    (down (cornerLine n |> rot))
+    (down (faceLine n))
+    (up (faceLine n |> mXY |> rot))
+
+let center n =
+  toFace
+    (up (centerLine n))
+    (down (centerLine n |> mXZ))
+    (down (centerLine n |> fX))
+    (up (centerLine n |> mXZ |> fZ))
+
+let edge n =
+  toFace
+    (up (edgeLine n))
+    (down (faceLine n |> mXZ))
+    (down (centerLine n))
+    (up (faceLine n |> mXZ |> fZ))
+
+let choosei p =
+  List.mapi (fun i e -> i, e)
+  >> List.choose (fun (i,e) -> if p i then Some e else None)
+
+let corners corner =
+  [ corner 
+    corner |> fZ
+    corner |> fX
+    corner |> fX |> fZ
+  ]
+
+let edges edge =
+  [ edge
+    edge |> fX
+    edge |> mXZ
+    edge |> fX |> mXZ
+  ]
+
+let colour colour = t >> toQLoop (faceStyle colour) |> List.map
+
+[ yield! corners (corner 6) |> colour "green"
+  yield! corners (corner 6) |> List.map rot |> colour "orange"
+  yield! corners (corner 6) |> List.map (rot >> rot) |> colour "purple"
+  yield! corners (corner 6 |> fY) |> colour "red"
+  yield! corners (corner 6 |> fY) |> List.map rot |> colour "blue"
+  yield! corners (corner 6 |> fY) |> List.map (rot >> rot) |> colour "yellow"
+  yield! [center 6] |> colour "green"
+  yield! [center 6] |> List.map rot |> colour "orange"
+  yield! [center 6] |> List.map (rot >> rot) |> colour "purple"
+  yield! [center 6] |> List.map fY |> colour "red"
+  yield! [center 6] |> List.map (fY >> rot) |> colour "blue"
+  yield! [center 6] |> List.map (fY >> rot >> rot) |> colour "yellow"
+  yield! edges (edge 6) |> colour "green"
+  yield! edges (edge 6) |> List.map rot |> colour "orange"
+  yield! edges (edge 6) |> List.map (rot >> rot) |> colour "purple"
+  yield! edges (edge 6 |> fY) |> colour "red"
+  yield! edges (edge 6 |> fY) |> List.map rot |> colour "blue"
+  yield! edges (edge 6 |> fY) |> List.map (rot >> rot) |> colour "yellow"
+  yield! rubik |> renderToPaths
+  yield! rim
+]
+|> choosei (fun i -> i <> 3 && i <> 7 && i <> 11)
+|> String.concat "\n"
+|> toSVG
+|> saveSVG "facetest2.svg"
