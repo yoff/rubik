@@ -484,6 +484,8 @@ let edge n =
     (down (centerLine n))
     (up (faceLine n |> mXZ |> fZ))
 
+//let nearCorner n =
+
 let choosei p =
   List.mapi (fun i e -> i, e)
   >> List.choose (fun (i,e) -> if p i then Some e else None)
@@ -529,3 +531,27 @@ let colour colour = t >> toQLoop (faceStyle colour) |> List.map
 |> String.concat "\n"
 |> toSVG
 |> saveSVG "facetest2.svg"
+
+let mRotX v =
+  baseM
+    { x = 1.0; y = 0.0; z = 0.0 }
+    { x = 0.0; y = cos v; z = -sin v }
+    { x = 0.0; y = sin v; z = cos v }
+
+let rotPaths i =
+  List.map (2.0 * pi * (float i) / 36.0 |> mRotX |> mul)
+  >> t
+  >> toQPath style
+
+[1..36]
+|> List.collect (fun i ->
+               [ faceLine 6 |> mXY |> rot
+                 cornerLine 6 |> rot
+                 centerLine 6 |> mXZ
+                 edgeLine 6 |> mXZ
+               ]
+               |> List.map (rotPaths i)
+            )
+|> String.concat "\n"
+|> toSVG
+|> saveSVG "rottest.svg"
