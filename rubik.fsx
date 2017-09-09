@@ -183,10 +183,10 @@ let r cutOff =
   |> fst
   |> fun x -> x - 300.0
 
-let style = "\"stroke:black; stroke-width:3; fill:none\""
+let style = "stroke:black; stroke-width:3; fill:none"
 
 let wrapPath style =
-  sprintf "  <path\n    style=%s\n    d=\"%s\"\n  />" style
+  sprintf "  <path\n    style=\"%s\"\n    d=\"%s\"\n  />" style
 
 let toPath =
   List.map (fun (x,y) -> sprintf "%f %f" x y)
@@ -289,8 +289,8 @@ let rim =
       cp |> rotate |> rotate ]
     |> List.map (toView >> proj >> toScreen)
     |> List.zip ([ 0.5*pi; -pi/6.0; -5.0*pi/6.0 ] |> List.map (fun v -> (x + radius*cos v, y + radius*sin v)))
-    |> List.map (fun ((rx, ry), (cx, cy)) -> sprintf "<path\n  style=%s\n  d=\"M %f %f L %f %f\" />" style cx cy rx ry)
-  [ yield sprintf "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" style=%s />" x y radius style
+    |> List.map (fun ((rx, ry), (cx, cy)) -> sprintf "<path\n  style=\"%s\"\n  d=\"M %f %f L %f %f\" />" style cx cy rx ry)
+  [ yield sprintf "<circle cx=\"%f\" cy=\"%f\" r=\"%f\" style=\"%s\" />" x y radius style
     yield! clines
   ]
 
@@ -394,10 +394,10 @@ let centerLine n =
   |> mapEveryOther false (fun v -> { x = v.x; y = l*v.y; z = l*v.z })
 
 let styles =
-  [| "\"stroke:red; stroke-width:3; fill:none\""
-     "\"stroke:blue; stroke-width:3; fill:none\"" 
-     "\"stroke:green; stroke-width:3; fill:none\""
-     "\"stroke:grey; stroke-width:3; fill:none\"" |]
+  [| "stroke:red; stroke-width:3; fill:none"
+     "stroke:blue; stroke-width:3; fill:none" 
+     "stroke:green; stroke-width:3; fill:none"
+     "stroke:grey; stroke-width:3; fill:none" |]
 
 let qtest =
   [ cornerLine 4
@@ -432,7 +432,7 @@ let mirrorYZ v =
   { x = v.x; y = v.z; z = v.y }
 
 let faceStyle colour =
-  sprintf "\"stroke:black; stroke-width:3; fill:%s\"" colour
+  sprintf "stroke:black; stroke-width:3; fill:%s" colour
 
 [ cornerLine 4 |> List.map (flipY >> flipX)
   cornerLine 4 |> List.map rotate
@@ -504,26 +504,27 @@ let edges edge =
     edge |> fX |> mXZ
   ]
 
-let colour colour = t >> toQLoop (faceStyle colour) |> List.map
+let colour c = t >> toQLoop (faceStyle c)
+let colourAll c = colour c |> List.map
 
-[ yield! corners (corner 6) |> colour "green"
-  yield! corners (corner 6) |> List.map rot |> colour "orange"
-  yield! corners (corner 6) |> List.map (rot >> rot) |> colour "purple"
-  yield! corners (corner 6 |> fY) |> colour "red"
-  yield! corners (corner 6 |> fY) |> List.map rot |> colour "blue"
-  yield! corners (corner 6 |> fY) |> List.map (rot >> rot) |> colour "yellow"
-  yield! [center 6] |> colour "green"
-  yield! [center 6] |> List.map rot |> colour "orange"
-  yield! [center 6] |> List.map (rot >> rot) |> colour "purple"
-  yield! [center 6] |> List.map fY |> colour "red"
-  yield! [center 6] |> List.map (fY >> rot) |> colour "blue"
-  yield! [center 6] |> List.map (fY >> rot >> rot) |> colour "yellow"
-  yield! edges (edge 6) |> colour "green"
-  yield! edges (edge 6) |> List.map rot |> colour "orange"
-  yield! edges (edge 6) |> List.map (rot >> rot) |> colour "purple"
-  yield! edges (edge 6 |> fY) |> colour "red"
-  yield! edges (edge 6 |> fY) |> List.map rot |> colour "blue"
-  yield! edges (edge 6 |> fY) |> List.map (rot >> rot) |> colour "yellow"
+[ yield! corners (corner 6) |> colourAll "green"
+  yield! corners (corner 6) |> List.map rot |> colourAll "orange"
+  yield! corners (corner 6) |> List.map (rot >> rot) |> colourAll "purple"
+  yield! corners (corner 6 |> fY) |> colourAll "red"
+  yield! corners (corner 6 |> fY) |> List.map rot |> colourAll "blue"
+  yield! corners (corner 6 |> fY) |> List.map (rot >> rot) |> colourAll "yellow"
+  yield! [center 6] |> colourAll "green"
+  yield! [center 6] |> List.map rot |> colourAll "orange"
+  yield! [center 6] |> List.map (rot >> rot) |> colourAll "purple"
+  yield! [center 6] |> List.map fY |> colourAll "red"
+  yield! [center 6] |> List.map (fY >> rot) |> colourAll "blue"
+  yield! [center 6] |> List.map (fY >> rot >> rot) |> colourAll "yellow"
+  yield! edges (edge 6) |> colourAll "green"
+  yield! edges (edge 6) |> List.map rot |> colourAll "orange"
+  yield! edges (edge 6) |> List.map (rot >> rot) |> colourAll "purple"
+  yield! edges (edge 6 |> fY) |> colourAll "red"
+  yield! edges (edge 6 |> fY) |> List.map rot |> colourAll "blue"
+  yield! edges (edge 6 |> fY) |> List.map (rot >> rot) |> colourAll "yellow"
   yield! rubik |> renderToPaths
   yield! rim
 ]
@@ -537,6 +538,18 @@ let mRotX v =
     { x = 1.0; y = 0.0; z = 0.0 }
     { x = 0.0; y = cos v; z = -sin v }
     { x = 0.0; y = sin v; z = cos v }
+
+let mRotY v =
+  baseM
+    { x = cos v; y = 0.0; z = sin v }
+    { x = 0.0; y = 1.0; z = 0.0 }
+    { x = -sin v; y = 0.0; z = cos v }
+
+let mRotZ v =
+  baseM
+    { x = cos v; y = -sin v; z = 0.0 }
+    { x = sin v; y = cos v; z = 0.0 }
+    { x = 0.0; y = 0.0; z = 1.0 }
 
 let rotPaths i =
   List.map (2.0 * pi * (float i) / 36.0 |> mRotX |> mul)
@@ -555,3 +568,201 @@ let rotPaths i =
 |> String.concat "\n"
 |> toSVG
 |> saveSVG "rottest.svg"
+
+type Face =
+  | North
+  | East
+  | South
+  | West
+  | Top
+  | Bottom
+
+type Direction =
+  | Clockwise
+  | CounterClockwise
+
+type Turn =
+  { face: Face
+    direction: Direction }
+
+type Model =
+  { couloring: Face[]
+    turn: (Turn * float) option }
+
+let paths3D =
+  [ yield! corners (corner 6)
+    yield! edges (edge 6)
+    yield! [center 6]
+    yield! corners (corner 6) |> List.map rot
+    yield! edges (edge 6) |> List.map rot
+    yield! [center 6] |> List.map rot
+    yield! corners (corner 6) |> List.map (rot >> rot)
+    yield! edges (edge 6) |> List.map (rot >> rot)
+    yield! [center 6] |> List.map (rot >> rot)
+    yield! corners (corner 6 |> fY)
+    yield! edges (edge 6 |> fY)
+    yield! [center 6] |> List.map fY
+    yield! corners (corner 6 |> fY) |> List.map rot
+    yield! edges (edge 6 |> fY) |> List.map rot
+    yield! [center 6] |> List.map (fY >> rot)
+    yield! corners (corner 6 |> fY) |> List.map (rot >> rot)
+    yield! edges (edge 6 |> fY) |> List.map (rot >> rot)
+    yield! [center 6] |> List.map (fY >> rot >> rot)
+  ]
+  |> Array.ofList
+
+let initialColouring =
+  [| North
+     East
+     South
+     West
+     Top
+     Bottom
+  |]
+  |> Array.collect (Array.create 9)
+
+let edgeLeft = [| 0; 1; 4 |]
+let edgeRight = [| 0; 2; 6 |]
+let centerA = [| 4; 5; 8 |]
+let centerB = [| 6; 7; 8 |]
+let moveFace n = Array.map ((+) (9*n))
+
+let indices =
+  [ North,
+    [| yield! moveFace 1 edgeLeft
+       yield! moveFace 1 centerB
+       yield! moveFace 2 edgeRight
+       yield! moveFace 2 centerA
+       yield! moveFace 3 [|0..8|]
+       yield! moveFace 4 edgeLeft
+       yield! moveFace 4 centerB
+       yield! moveFace 5 edgeRight
+       yield! moveFace 5 centerA
+    |]
+    // |> Array.sort
+  ; East,
+    [| yield! edgeRight
+       yield! centerA
+       yield! moveFace 2 edgeLeft
+       yield! moveFace 2 centerB
+       yield! moveFace 3 edgeRight
+       yield! moveFace 3 centerA
+       yield! moveFace 4 [|0..8|]
+       yield! moveFace 5 edgeLeft
+       yield! moveFace 5 centerB
+    |]
+    // |> Array.sort
+  ; South,
+    [| yield! edgeLeft
+       yield! centerB
+       yield! moveFace 1 edgeRight
+       yield! moveFace 1 centerA
+       yield! moveFace 3 edgeLeft
+       yield! moveFace 3 centerB
+       yield! moveFace 4 edgeRight
+       yield! moveFace 4 centerA
+       yield! moveFace 5 [|0..8|]
+    |]
+    // |> Array.sort
+  ; West,
+    [| yield! moveFace 1 edgeLeft
+       yield! moveFace 2 edgeRight
+       yield! moveFace 3 [|0..8|]
+       yield! moveFace 4 edgeLeft
+       yield! moveFace 5 edgeRight
+    |]
+    // |> Array.sort
+  ; Top,
+    [| yield! edgeRight
+       yield! moveFace 2 edgeLeft
+       yield! moveFace 3 edgeRight
+       yield! moveFace 4 [|0..8|]
+       yield! moveFace 5 edgeLeft
+    |]
+    // |> Array.sort
+  ; Bottom,
+    [| yield! edgeLeft
+       yield! moveFace 1 edgeRight
+       yield! moveFace 3 edgeLeft
+       yield! moveFace 4 edgeRight
+       yield! moveFace 5 [|0..8|]
+    |]
+    // |> Array.sort
+  ]
+  |> Map.ofList
+
+// let mapFace face f paths =
+//   match face with
+//   | North -> [|]
+
+let centroid (points: (float * float) list) =
+  let n = points.Length |> float
+  let cx, cy =
+    points
+    |> List.fold (fun (cx, cy) (x, y) -> (cx+x, cy+y)) (0.0, 0.0)
+  (cx/n, cy/n)
+
+let faceColour = function
+  | North -> "green"
+  | East -> "orange"
+  | South -> "purple"
+  | West -> "red"
+  | Top -> "blue"
+  | Bottom -> "yellow"
+
+let colourNumber n (path, face) =
+  let contour = t path
+  let style = face |> faceColour |> faceStyle
+  let filledFace =
+    if n = 3 || n = 12 || n = 21 then "" else
+    contour |> toQLoop style
+  let number =
+    contour
+    |> centroid
+    |> fun (x,y) -> sprintf "<text x=\"%f\" y=\"%f\" text-anchor=\"middle\" style=\"%s\">%d</text>" x y style n
+  sprintf "%s\n%s" filledFace number
+
+(paths3D, initialColouring)
+||> Array.zip
+|> Array.mapi colourNumber
+|> String.concat "\n"
+|> toSVG
+|> saveSVG "numbering.svg"
+
+let testFace face fileName =
+  (paths3D, initialColouring)
+  ||> Array.zip
+  |> Array.map (fun (path, face) -> colour (face |> faceColour |> faceStyle) path)
+  |> Array.mapi (fun i s -> if indices.[face] |> Array.contains i then s else "")
+  |> String.concat "\n"
+  |> toSVG
+  |> saveSVG fileName
+
+testFace North "testNorth.svg"
+testFace South "testSouth.svg"
+testFace East "testEast.svg"
+testFace West "testWest.svg"
+testFace Top "testTop.svg"
+testFace Bottom "testBottom.svg"
+
+let turnM turn =
+  match turn.face with
+  | North -> mRotY
+  | East -> mRotZ
+  | South -> mRotX
+  | West -> mRotY
+  | Top -> mRotZ
+  | Bottom -> mRotX
+
+let testFaceTurn turn v fileName =
+  (paths3D, initialColouring)
+  ||> Array.zip
+  |> Array.mapi (fun i (p,f) -> if indices.[turn.face] |> Array.contains i then (p |> (turnM turn v |> mul |> List.map), f) else (p,f))
+  |> Array.map (fun (path, face) -> colour (face |> faceColour |> faceStyle) path)
+  |> String.concat "\n"
+  |> toSVG
+  |> saveSVG fileName
+
+testFaceTurn { face = North; direction = Clockwise } (pi/4.0) "testTurnNorth.svg"
+testFaceTurn { face = East; direction = Clockwise } (pi/4.0) "testTurnEast.svg"
+testFaceTurn { face = South; direction = Clockwise } (pi/4.0) "testTurnSouth.svg"
