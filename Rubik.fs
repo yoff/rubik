@@ -7,6 +7,21 @@ open Fable.Helpers.React.Props
 open Style
 open Messages
 
+open Fable.Import.Browser
+open Fable.Core.JsInterop
+
+open Elmish
+open Elmish.React
+
+/// Animation
+let timerTick dispatch =
+    window.setInterval(fun _ -> 
+        dispatch (Tick DateTime.Now |> RubikMsg)
+    , 100) |> ignore
+
+
+let subscription _ = Cmd.ofSub timerTick
+
 /// Model
 
 type Face =
@@ -25,9 +40,14 @@ type Turn =
   { face: Face
     direction: Direction }
 
+type Turning =
+  { turn: Turn
+    started: DateTime
+    progress: float } // should run from 0.0 to 1.0 completing the turn
+
 type Model =
-  { couloring: Face[]
-    turn: (Turn * float) option }
+  { colouring: Face[]
+    turning: Turning option }
 
 let initialColouring =
   [| North
@@ -40,8 +60,59 @@ let initialColouring =
   |> Array.collect (Array.create 9)
 
 let init =
-  { couloring = initialColouring
-    turn = None }
+  { colouring = initialColouring
+    turning = None }
+
+let apply turn (colouring: Face[]) =
+  match turn.face with
+  | North ->
+    [|
+        yield! [| 0..8 |]
+        yield! [| 20; 18; 11; 12; 24; 14; 28; 22; 26 |]
+        yield! [| 36; 19; 37; 21; 42; 43; 40; 25; 44 |]
+        yield! [| 28; 30; 27; 29; 34; 33; 31; 32; 35 |]
+        yield! [| 47; 45; 38; 39; 51; 41; 50; 49; 53 |]
+        yield! [| 9; 46; 10; 48; 15; 16; 13; 52; 17 |]
+    |]
+    |> Array.map (fun i -> colouring.[i])
+  | East
+  | South
+  | West
+  | Top
+  | Bottom ->
+    colouring
+
+/// Update
+
+// milliseconds it takes to complete a turn
+let turnTime = 3000.0
+
+let updateTick t (model: Model) =
+  match model.turning with
+  | None ->
+    model
+  | Some turning ->
+    let dt = (DateTime.Now - turning.started).TotalMilliseconds
+    let p = float dt / turnTime |> min 1.0
+    if p < 1.0 then
+      let newTurning = { turning with progress = p }
+      { model with turning = Some newTurning }
+    else
+      { colouring = apply turning.turn model.colouring
+        turning = None }
+
+let update (msg:RubikMsg) model : Model*Cmd<RubikMsg> =
+  match msg with
+  | Tick t ->
+    updateTick t model, []
+  | TurnNorthCW ->
+    let turn = { face = North; direction = Clockwise }
+    let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
+    { model with turning = Some turning }, []
+  | TurnNorthCCW ->
+    let turn = { face = North; direction = CounterClockwise }
+    let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
+    { model with turning = Some turning }, []
 
 /// View
 
@@ -404,14 +475,15 @@ let turnM turn =
   | Bottom -> mRotX
 
 let render (model:Model) =
-  match model.turn with
+  match model.turning with
   | None ->
-      (paths3D, model.couloring)
+      (paths3D, model.colouring)
       ||> Array.zip
       |> Array.map (fun (path, face) -> colour (face |> faceColour) path)
       |> Array.toList
-  | Some (turn, v) ->
-      (paths3D, model.couloring)
+  | Some ({turn = turn; started = _; progress = p}) ->
+      let v = p * pi / 2.0
+      (paths3D, model.colouring)
       ||> Array.zip
       |> Array.mapi (fun i (p,f) -> if indices.[turn.face] |> Array.contains i then (p |> (turnM turn v |> mul |> List.map), f) else (p,f))
       |> Array.map (fun (path, face) -> colour (face |> faceColour) path)
@@ -423,4 +495,5 @@ let view (model:Model) (dispatch: AppMsg -> unit) =
     //   svg [ ClassName "faces" ] [
     //       path [ Fill "green"; D "M 10 10 L 30 30 L 10 30 Z" ] []
     //   ]
+      buttonLink "" (fun _ -> dispatch (RubikMsg TurnNorthCW)) [ str "Turn" ]
     ]
