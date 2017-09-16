@@ -63,16 +63,34 @@ let init =
   { colouring = initialColouring
     turning = None }
 
+/// Messages - not used yet
+
+// type Message =
+//   | Turn of Turn
+//   | Tick of DateTime
+
+/// Update
+
 let apply turn (colouring: Face[]) =
   match turn.face with
   | North ->
     [|
         yield! [| 0..8 |]
-        yield! [| 20; 18; 11; 12; 24; 14; 28; 22; 26 |]
+        yield! [| 20; 18; 11; 12; 24; 14; 23; 22; 26 |]
         yield! [| 36; 19; 37; 21; 42; 43; 40; 25; 44 |]
         yield! [| 28; 30; 27; 29; 34; 33; 31; 32; 35 |]
         yield! [| 47; 45; 38; 39; 51; 41; 50; 49; 53 |]
-        yield! [| 9; 46; 10; 48; 15; 16; 13; 52; 17 |]
+        yield! [|  9; 46; 10; 48; 15; 16; 13; 52; 17 |]
+    |]
+    |> Array.map (fun i -> colouring.[i])
+  | West ->
+    [|
+        yield! [| 0..8 |]
+        yield! [| 20; 18; 11; 12; 24; 14; 15; 16; 17 |]
+        yield! [| 36; 19; 37; 21; 22; 23; 40; 25; 26 |]
+        yield! [| 28; 30; 27; 29; 34; 33; 31; 32; 35 |]
+        yield! [| 47; 45; 38; 39; 51; 41; 42; 43; 44 |]
+        yield! [|  9; 46; 10; 48; 49; 50; 13; 52; 53 |]
     |]
     |> Array.map (fun i -> colouring.[i])
   | East
@@ -81,8 +99,6 @@ let apply turn (colouring: Face[]) =
   | Top
   | Bottom ->
     colouring
-
-/// Update
 
 // milliseconds it takes to complete a turn
 let turnTime = 3000.0
@@ -111,6 +127,46 @@ let update (msg:RubikMsg) model : Model*Cmd<RubikMsg> =
     { model with turning = Some turning }, []
   | TurnNorthCCW ->
     let turn = { face = North; direction = CounterClockwise }
+    let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
+    { model with turning = Some turning }, []
+  | TurnSouthCW ->
+    let turn = { face = South; direction = Clockwise }
+    let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
+    { model with turning = Some turning }, []
+  | TurnSouthCCW ->
+    let turn = { face = South; direction = CounterClockwise }
+    let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
+    { model with turning = Some turning }, []
+  | TurnEastCW ->
+    let turn = { face = East; direction = Clockwise }
+    let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
+    { model with turning = Some turning }, []
+  | TurnEastCCW ->
+    let turn = { face = East; direction = CounterClockwise }
+    let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
+    { model with turning = Some turning }, []
+  | TurnWestCW ->
+    let turn = { face = West; direction = Clockwise }
+    let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
+    { model with turning = Some turning }, []
+  | TurnWestCCW ->
+    let turn = { face = West; direction = CounterClockwise }
+    let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
+    { model with turning = Some turning }, []
+  | TurnTopCW ->
+    let turn = { face = Top; direction = Clockwise }
+    let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
+    { model with turning = Some turning }, []
+  | TurnTopCCW ->
+    let turn = { face = Top; direction = CounterClockwise }
+    let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
+    { model with turning = Some turning }, []
+  | TurnBottomCW ->
+    let turn = { face = Bottom; direction = Clockwise }
+    let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
+    { model with turning = Some turning }, []
+  | TurnBottomCCW ->
+    let turn = { face = Bottom; direction = CounterClockwise }
     let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
     { model with turning = Some turning }, []
 
@@ -390,9 +446,12 @@ let toQs points =
 let wrapPath style p =
   path (style @ [D p]) [] 
 
+let loop =
+  sprintf "%s\n       z"
+
 let toQLoop style points =
   toQs points
-  |> sprintf "%s\n       z"
+  |> loop
   |> wrapPath style
 
 let m =
@@ -446,6 +505,71 @@ let faceStyle colour =
   
 let colour c = t >> toQLoop (faceStyle c)
 
+let nearCornerNorth n style =
+  let p1 =
+    (down (faceLine n |> mXZ |> fZ))
+    |> fX
+    |> t
+  let p2 =
+    (up (faceLine n |> mXZ |> fZ))
+    |> fX |> mXZ
+    |> t
+  let x1 = 300.0 + 297.0 * cos (pi / 6.0)
+  let y1 = 300.0 - 297.0 * sin (pi / 6.0)
+  p1 @ List.tail p2
+  |> toQs
+  |> fun s -> sprintf "%s\n       L %f %f" s x1 y1
+  |> sprintf "%s\n       A 297 297 0 0 1 300 597"
+  |> loop
+  |> wrapPath style
+
+let nearCornerEast n style =
+  let p1 =
+    (down (faceLine n |> mXZ |> fZ))
+    |> fX |> rot
+    |> t
+  let p2 =
+    (up (faceLine n |> mXZ |> fZ))
+    |> fX |> mXZ |> rot
+    |> t
+  let x1 = 300.0 + 297.0 * cos (5.0 * pi / 6.0)
+  let y1 = 300.0 - 297.0 * sin (5.0 * pi / 6.0)
+  let x2 = 300.0 + 297.0 * cos (pi / 6.0)
+  let y2 = 300.0 - 297.0 * sin (pi / 6.0)
+  p1 @ List.tail p2
+  |> toQs
+  |> fun s -> sprintf "%s\n       L %f %f" s x1 y1
+  |> fun s -> sprintf "%s\n       A 297 297 0 0 1 %f %f" s x2 y2
+  |> loop
+  |> wrapPath style
+
+let nearCornerSouth n style =
+  let p1 =
+    (down (faceLine n |> mXZ |> fZ))
+    |> fX |> rot |> rot
+    |> t
+  let p2 =
+    (up (faceLine n |> mXZ |> fZ))
+    |> fX |> mXZ |> rot |> rot
+    |> t
+  let x2 = 300.0 + 297.0 * cos (5.0 * pi / 6.0)
+  let y2 = 300.0 - 297.0 * sin (5.0 * pi / 6.0)
+  p1 @ List.tail p2
+  |> toQs
+  |> sprintf "%s\n       L 300 597"
+  |> fun s -> sprintf "%s\n       A 297 297 0 0 1 %f %f" s x2 y2
+  |> loop
+  |> wrapPath style
+
+let fixCorners a =
+  let set i face path a =
+    Array.set a i (faceColour face |> faceStyle |> path)
+    a
+  a
+  |> set 3 North (nearCornerNorth 6)
+  |> set 12 South (nearCornerSouth 6)
+  |> set 21 East (nearCornerEast 6)
+
 /// 3D manipulations
 let mRotX v =
   baseM
@@ -480,6 +604,7 @@ let render (model:Model) =
       (paths3D, model.colouring)
       ||> Array.zip
       |> Array.map (fun (path, face) -> colour (face |> faceColour) path)
+      |> fixCorners
       |> Array.toList
   | Some ({turn = turn; started = _; progress = p}) ->
       let v = p * pi / 2.0
@@ -487,13 +612,19 @@ let render (model:Model) =
       ||> Array.zip
       |> Array.mapi (fun i (p,f) -> if indices.[turn.face] |> Array.contains i then (p |> (turnM turn v |> mul |> List.map), f) else (p,f))
       |> Array.map (fun (path, face) -> colour (face |> faceColour) path)
+      |> fixCorners
       |> Array.toList
 
 let view (model:Model) (dispatch: AppMsg -> unit) = 
     [ words 60 "Flat Rubik's cube"
-      svg [ ClassName "faces"; Width (U2.Case1 600.0); (*Height (U2.Case1 600.0)*) ] (render model)
+      svg [ ClassName "faces"; Width (U2.Case1 600.0); (*Height (U2.Case1 600.0)*) unbox ("height", "600px") ] (render model)
     //   svg [ ClassName "faces" ] [
     //       path [ Fill "green"; D "M 10 10 L 30 30 L 10 30 Z" ] []
     //   ]
-      buttonLink "" (fun _ -> dispatch (RubikMsg TurnNorthCW)) [ str "Turn" ]
+      buttonLink "" (fun _ -> dispatch (RubikMsg TurnNorthCW)) [ str "Turn north" ]
+      buttonLink "" (fun _ -> dispatch (RubikMsg TurnSouthCW)) [ str "Turn south" ]
+      buttonLink "" (fun _ -> dispatch (RubikMsg TurnEastCW)) [ str "Turn east" ]
+      buttonLink "" (fun _ -> dispatch (RubikMsg TurnWestCW)) [ str "Turn west" ]
+      buttonLink "" (fun _ -> dispatch (RubikMsg TurnTopCW)) [ str "Turn top" ]
+      buttonLink "" (fun _ -> dispatch (RubikMsg TurnBottomCW)) [ str "Turn bottom" ]
     ]
