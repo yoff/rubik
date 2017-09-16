@@ -135,7 +135,7 @@ let apply turn (colouring: Face[]) =
     |> Array.map (fun i -> colouring.[i])
 
 // milliseconds it takes to complete a turn
-let turnTime = 3000.0
+let turnTime = 1000.0 // 1 second
 
 let updateTick t (model: Model) =
   match model.turning with
@@ -652,13 +652,10 @@ let render (model:Model) =
 let view (model:Model) (dispatch: AppMsg -> unit) = 
     [ words 60 "Flat Rubik's cube"
       svg [ ClassName "faces"; Width (U2.Case1 600.0); (*Height (U2.Case1 600.0)*) unbox ("height", "600px") ] (render model)
-    //   svg [ ClassName "faces" ] [
-    //       path [ Fill "green"; D "M 10 10 L 30 30 L 10 30 Z" ] []
-    //   ]
-      buttonLink "" (fun _ -> dispatch (RubikMsg TurnNorthCW)) [ str "Turn north" ]
-      buttonLink "" (fun _ -> dispatch (RubikMsg TurnSouthCW)) [ str "Turn south" ]
-      buttonLink "" (fun _ -> dispatch (RubikMsg TurnEastCW)) [ str "Turn east" ]
-      buttonLink "" (fun _ -> dispatch (RubikMsg TurnWestCW)) [ str "Turn west" ]
-      buttonLink "" (fun _ -> dispatch (RubikMsg TurnTopCW)) [ str "Turn top" ]
-      buttonLink "" (fun _ -> dispatch (RubikMsg TurnBottomCW)) [ str "Turn bottom" ]
+      buttonLink "" (fun _ -> dispatch (RubikMsg TurnNorthCW)) [ str "Turn left both" ]
+      buttonLink "" (fun _ -> dispatch (RubikMsg TurnWestCW)) [ str "Turn left inner" ]
+      buttonLink "" (fun _ -> dispatch (RubikMsg TurnSouthCW)) [ str "Turn right both" ]
+      buttonLink "" (fun _ -> dispatch (RubikMsg TurnBottomCW)) [ str "Turn right inner" ]
+      buttonLink "" (fun _ -> dispatch (RubikMsg TurnEastCW)) [ str "Turn bottom both" ]
+      buttonLink "" (fun _ -> dispatch (RubikMsg TurnTopCW)) [ str "Turn bottom inner" ]
     ]
