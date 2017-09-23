@@ -69,70 +69,131 @@ let init =
 //   | Turn of Turn
 //   | Tick of DateTime
 
+/// Scramble
+let scramble dispatch =
+  let n = 20 // this many random moves
+  let r = System.Random ()
+  let genMove _ =
+    match r.Next () % 12 with
+    | 0 -> TurnNorthCW
+    | 1 -> TurnNorthCCW
+    | 2 -> TurnWestCW
+    | 3 -> TurnWestCCW
+    | 4 -> TurnSouthCW
+    | 5 -> TurnSouthCCW
+    | 6 -> TurnBottomCW
+    | 7 -> TurnBottomCCW
+    | 8 -> TurnEastCW
+    | 9 -> TurnEastCCW
+    | 10 -> TurnTopCW
+    | 11 -> TurnTopCCW
+  [1..n]
+  |> List.map genMove
+  |> List.iter (RubikMsg >> dispatch)
+
 /// Update
+let applyPermutation p (colouring: 'a[]) =
+  p |> Array.map (fun i -> colouring.[i])
+
+let flipPerm p =
+  p
+  |> applyPermutation p
+  |> applyPermutation p
+
+let permNorthCW =
+  [|
+      yield! [| 0..8 |]
+      yield! [| 20; 18; 11; 12; 24; 14; 23; 22; 26 |]
+      yield! [| 36; 19; 37; 21; 42; 43; 40; 25; 44 |]
+      yield! [| 28; 30; 27; 29; 34; 33; 31; 32; 35 |]
+      yield! [| 47; 45; 38; 39; 51; 41; 50; 49; 53 |]
+      yield! [|  9; 46; 10; 48; 15; 16; 13; 52; 17 |]
+  |]
+
+let permNorthCCW =
+  flipPerm permNorthCW
+
+let permWestCW =
+  [|
+      yield! [| 0..8 |]
+      yield! [| 20; 18; 11; 12; 24; 14; 15; 16; 17 |]
+      yield! [| 36; 19; 37; 21; 22; 23; 40; 25; 26 |]
+      yield! [| 28; 30; 27; 29; 34; 33; 31; 32; 35 |]
+      yield! [| 47; 45; 38; 39; 51; 41; 42; 43; 44 |]
+      yield! [|  9; 46; 10; 48; 49; 50; 13; 52; 53 |]
+  |]
+
+let permWestCCW =
+  flipPerm permWestCW
+
+let permSouthCW =
+  [|
+      yield! [| 11;  9;  2;  3; 15;  5; 14; 13; 17 |]
+      yield! [| 27; 10; 28; 12; 33; 34; 31; 16; 35 |]
+      yield! [| 18..26 |]
+      yield! [| 38; 36; 29; 30; 42; 32; 41; 40; 44 |]
+      yield! [|  0; 37;  1; 39;  6;  7;  4; 43;  8 |]
+      yield! [| 46; 48; 45; 47; 52; 51; 49; 50; 53 |]
+  |]
+
+let permSouthCCW =
+  flipPerm permSouthCW
+
+let permBottomCW =
+  [|
+      yield! [| 11;  9;  2;  3; 15;  5;  6;  7;  8 |]
+      yield! [| 27; 10; 28; 12; 13; 14; 31; 16; 17 |]
+      yield! [| 18..26 |]
+      yield! [| 38; 36; 29; 30; 42; 32; 33; 34; 35 |]
+      yield! [|  0; 37;  1; 39; 40; 41;  4; 43; 44 |]
+      yield! [| 46; 48; 45; 47; 52; 51; 49; 50; 53 |]
+  |]
+
+let permBottomCCW =
+  flipPerm permBottomCW
+
+let permEastCW =
+  [|
+      yield! [| 45;  1; 46;  3; 51; 52; 49;  7; 53 |]
+      yield! [| 9..17 |]
+      yield! [|  2;  0; 20; 21;  6; 23;  5;  4;  8 |]
+      yield! [| 18; 28; 19; 30; 24; 25; 22; 34; 26 |]
+      yield! [| 37; 39; 36; 38; 43; 42; 40; 41; 44 |]
+      yield! [| 29; 27; 47; 48; 33; 50; 32; 31; 35 |]
+  |]
+
+let permEastCCW =
+  flipPerm permEastCW
+
+let permTopCW =
+  [|
+      yield! [| 45;  1; 46;  3;  4;  5; 49;  7;  8 |]
+      yield! [| 9..17 |]
+      yield! [|  2;  0; 20; 21;  6; 23; 24; 25; 26 |]
+      yield! [| 18; 28; 19; 30; 31; 32; 22; 34; 35 |]
+      yield! [| 37; 39; 36; 38; 43; 42; 40; 41; 44 |]
+      yield! [| 29; 27; 47; 48; 33; 50; 51; 52; 53 |]
+  |]
+
+let permTopCCW =
+  flipPerm permTopCW
 
 let apply turn (colouring: Face[]) =
-  match turn.face with
-  | North ->
-    [|
-        yield! [| 0..8 |]
-        yield! [| 20; 18; 11; 12; 24; 14; 23; 22; 26 |]
-        yield! [| 36; 19; 37; 21; 42; 43; 40; 25; 44 |]
-        yield! [| 28; 30; 27; 29; 34; 33; 31; 32; 35 |]
-        yield! [| 47; 45; 38; 39; 51; 41; 50; 49; 53 |]
-        yield! [|  9; 46; 10; 48; 15; 16; 13; 52; 17 |]
-    |]
-    |> Array.map (fun i -> colouring.[i])
-  | West ->
-    [|
-        yield! [| 0..8 |]
-        yield! [| 20; 18; 11; 12; 24; 14; 15; 16; 17 |]
-        yield! [| 36; 19; 37; 21; 22; 23; 40; 25; 26 |]
-        yield! [| 28; 30; 27; 29; 34; 33; 31; 32; 35 |]
-        yield! [| 47; 45; 38; 39; 51; 41; 42; 43; 44 |]
-        yield! [|  9; 46; 10; 48; 49; 50; 13; 52; 53 |]
-    |]
-    |> Array.map (fun i -> colouring.[i])
-  | South ->
-    [|
-        yield! [| 11;  9;  2;  3; 15;  5; 14; 13; 17 |]
-        yield! [| 27; 10; 28; 12; 33; 34; 31; 16; 35 |]
-        yield! [| 18..26 |]
-        yield! [| 38; 36; 29; 30; 42; 32; 41; 40; 44 |]
-        yield! [|  0; 37;  1; 39;  6;  7;  4; 43;  8 |]
-        yield! [| 46; 48; 45; 47; 52; 51; 49; 50; 53 |]
-    |]
-    |> Array.map (fun i -> colouring.[i])
-  | Bottom ->
-    [|
-        yield! [| 11;  9;  2;  3; 15;  5;  6;  7;  8 |]
-        yield! [| 27; 10; 28; 12; 13; 14; 31; 16; 17 |]
-        yield! [| 18..26 |]
-        yield! [| 38; 36; 29; 30; 42; 32; 33; 34; 35 |]
-        yield! [|  0; 37;  1; 39; 40; 41;  4; 43; 44 |]
-        yield! [| 46; 48; 45; 47; 52; 51; 49; 50; 53 |]
-    |]
-    |> Array.map (fun i -> colouring.[i])
-  | East ->
-    [|
-        yield! [| 45;  1; 46;  3; 51; 52; 49;  7; 53 |]
-        yield! [| 9..17 |]
-        yield! [|  2;  0; 20; 21;  6; 23;  5;  4;  8 |]
-        yield! [| 18; 28; 19; 30; 24; 25; 22; 34; 26 |]
-        yield! [| 37; 39; 36; 38; 43; 42; 40; 41; 44 |]
-        yield! [| 29; 27; 47; 48; 33; 50; 32; 31; 35 |]
-    |]
-    |> Array.map (fun i -> colouring.[i])
-  | Top ->
-    [|
-        yield! [| 45;  1; 46;  3;  4;  5; 49;  7;  8 |]
-        yield! [| 9..17 |]
-        yield! [|  2;  0; 20; 21;  6; 23; 24; 25; 26 |]
-        yield! [| 18; 28; 19; 30; 31; 32; 22; 34; 35 |]
-        yield! [| 37; 39; 36; 38; 43; 42; 40; 41; 44 |]
-        yield! [| 29; 27; 47; 48; 33; 50; 51; 52; 53 |]
-    |]
-    |> Array.map (fun i -> colouring.[i])
+  let perm =
+    match turn.face, turn.direction with
+    | North, Clockwise -> permNorthCW
+    | North, CounterClockwise -> permNorthCCW
+    | West, Clockwise -> permWestCW
+    | West, CounterClockwise -> permWestCCW
+    | South, Clockwise -> permSouthCW
+    | South, CounterClockwise -> permSouthCCW
+    | Bottom, Clockwise -> permBottomCW
+    | Bottom, CounterClockwise -> permBottomCCW
+    | East, Clockwise -> permEastCW
+    | East, CounterClockwise -> permEastCCW
+    | Top, Clockwise -> permTopCW
+    | Top, CounterClockwise -> permTopCCW
+  applyPermutation perm colouring
 
 // milliseconds it takes to complete a turn
 let turnTime = 1000.0 // 1 second
@@ -152,57 +213,64 @@ let updateTick t (model: Model) =
         turning = None }
 
 let update (msg:RubikMsg) model : Model*Cmd<RubikMsg> =
+  let setTurning turning =
+    match model.turning with
+    | None -> 
+      { model with turning = Some turning }
+    | Some currentlyTurning ->
+      { colouring = apply currentlyTurning.turn model.colouring
+        turning = Some turning }
   match msg with
   | Tick t ->
     updateTick t model, []
   | TurnNorthCW ->
     let turn = { face = North; direction = Clockwise }
     let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
-    { model with turning = Some turning }, []
+    setTurning turning, []
   | TurnNorthCCW ->
     let turn = { face = North; direction = CounterClockwise }
     let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
-    { model with turning = Some turning }, []
+    setTurning turning, []
   | TurnSouthCW ->
     let turn = { face = South; direction = Clockwise }
     let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
-    { model with turning = Some turning }, []
+    setTurning turning, []
   | TurnSouthCCW ->
     let turn = { face = South; direction = CounterClockwise }
     let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
-    { model with turning = Some turning }, []
+    setTurning turning, []
   | TurnEastCW ->
     let turn = { face = East; direction = Clockwise }
     let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
-    { model with turning = Some turning }, []
+    setTurning turning, []
   | TurnEastCCW ->
     let turn = { face = East; direction = CounterClockwise }
     let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
-    { model with turning = Some turning }, []
+    setTurning turning, []
   | TurnWestCW ->
     let turn = { face = West; direction = Clockwise }
     let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
-    { model with turning = Some turning }, []
+    setTurning turning, []
   | TurnWestCCW ->
     let turn = { face = West; direction = CounterClockwise }
     let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
-    { model with turning = Some turning }, []
+    setTurning turning, []
   | TurnTopCW ->
     let turn = { face = Top; direction = Clockwise }
     let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
-    { model with turning = Some turning }, []
+    setTurning turning, []
   | TurnTopCCW ->
     let turn = { face = Top; direction = CounterClockwise }
     let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
-    { model with turning = Some turning }, []
+    setTurning turning, []
   | TurnBottomCW ->
     let turn = { face = Bottom; direction = Clockwise }
     let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
-    { model with turning = Some turning }, []
+    setTurning turning, []
   | TurnBottomCCW ->
     let turn = { face = Bottom; direction = CounterClockwise }
     let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
-    { model with turning = Some turning }, []
+    setTurning turning, []
 
 /// View
 
@@ -525,7 +593,6 @@ let windowRadius = 2.5
 let toScreen = toScreenCanvas -windowRadius -windowRadius windowRadius windowRadius width
 let t = toPlane >> toScreen |> List.map
 
-
 let faceColour = function
   | North -> "green"
   | East -> "orange"
@@ -641,7 +708,8 @@ let render (model:Model) =
       |> fixCorners
       |> Array.toList
   | Some ({turn = turn; started = _; progress = p}) ->
-      let v = p * pi / 2.0
+      let sign = match turn.direction with Clockwise -> 1.0 | CounterClockwise -> -1.0
+      let v = sign * p * pi / 2.0
       (paths3D, model.colouring)
       ||> Array.zip
       |> Array.mapi (fun i (p,f) -> if indices.[turn.face] |> Array.contains i then (p |> (turnM turn v |> mul |> List.map), f) else (p,f))
@@ -649,13 +717,65 @@ let render (model:Model) =
       |> fixCorners
       |> Array.toList
 
+/// Arrow buttons
+let largeArrow =
+  "M 5 5
+   A 49 47 0 0 1 20 90
+   L 25 95
+   L 10 95
+   L 10 80
+   L 15 85
+   A 49 47 0 0 0 5 5
+   Z"
+
+let smallArrow =
+  "M 5 20
+   A 40 35 0 0 1 17 70
+   L 20 73
+   L 10 73
+   L 10 63
+   L 13 66
+   A 40 35 0 0 0 5 20
+   Z"
+
+let arrowsBottom dispatch turnLarge turnSmall =
+  [ g
+      [ OnClick (fun _ -> dispatch (RubikMsg turnLarge)) ]
+      [ path [ D largeArrow ] [] ]
+    g
+      [ OnClick (fun _ -> dispatch (RubikMsg turnSmall)) ]
+      [ path [ D smallArrow ] [] ]    
+  ]
+
+let arrows dispatch =
+  [ g [ Transform "translate(300,600)" ] (arrowsBottom dispatch TurnEastCW TurnTopCW)
+    g [ Transform "translate(300,600),scale(-1,1)" ] (arrowsBottom dispatch TurnEastCCW TurnTopCCW)
+    g [ Transform "translate(300,600),rotate(120,0,-300)" ] (arrowsBottom dispatch TurnNorthCW TurnWestCW)
+    g [ Transform "translate(300,600),rotate(120,0,-300),scale(-1,1)" ] (arrowsBottom dispatch TurnNorthCCW TurnWestCCW)
+    g [ Transform "translate(300,600),rotate(240,0,-300)" ] (arrowsBottom dispatch TurnSouthCW TurnBottomCW)
+    g [ Transform "translate(300,600),rotate(240,0,-300),scale(-1,1)" ] (arrowsBottom dispatch TurnSouthCCW TurnBottomCCW)
+  ]
+
+let composition model (dispatch: AppMsg -> unit) =
+  [ g [ Transform "translate(100,0)" ]
+      [ yield! render model 
+        yield! arrows dispatch ]
+  ]
+
 let view (model:Model) (dispatch: AppMsg -> unit) = 
     [ words 60 "Flat Rubik's cube"
-      svg [ ClassName "faces"; Width (U2.Case1 600.0); (*Height (U2.Case1 600.0)*) unbox ("height", "600px") ] (render model)
-      buttonLink "" (fun _ -> dispatch (RubikMsg TurnNorthCW)) [ str "Turn left both" ]
-      buttonLink "" (fun _ -> dispatch (RubikMsg TurnWestCW)) [ str "Turn left inner" ]
-      buttonLink "" (fun _ -> dispatch (RubikMsg TurnSouthCW)) [ str "Turn right both" ]
-      buttonLink "" (fun _ -> dispatch (RubikMsg TurnBottomCW)) [ str "Turn right inner" ]
-      buttonLink "" (fun _ -> dispatch (RubikMsg TurnEastCW)) [ str "Turn bottom both" ]
-      buttonLink "" (fun _ -> dispatch (RubikMsg TurnTopCW)) [ str "Turn bottom inner" ]
+      svg [ ClassName "faces"; Width (U2.Case1 800.0); (*Height (U2.Case1 700.0)*) unbox ("height", "700px") ] (composition model dispatch)
+      buttonLink "" (fun _ -> scramble dispatch) [ str "Scramble!" ]
+      // buttonLink "" (fun _ -> dispatch (RubikMsg TurnNorthCW)) [ str "Turn left disk, clockwise" ]
+      // buttonLink "" (fun _ -> dispatch (RubikMsg TurnNorthCCW)) [ str "Turn left disk, counter clockwise" ]
+      // buttonLink "" (fun _ -> dispatch (RubikMsg TurnWestCW)) [ str "Turn left inner disk, clockwise" ]
+      // buttonLink "" (fun _ -> dispatch (RubikMsg TurnWestCCW)) [ str "Turn left inner disk, counter clockwise" ]
+      // buttonLink "" (fun _ -> dispatch (RubikMsg TurnSouthCW)) [ str "Turn right disk, clockwise" ]
+      // buttonLink "" (fun _ -> dispatch (RubikMsg TurnSouthCCW)) [ str "Turn right disk, counter clockwise" ]
+      // buttonLink "" (fun _ -> dispatch (RubikMsg TurnBottomCW)) [ str "Turn right inner disk, clockwise" ]
+      // buttonLink "" (fun _ -> dispatch (RubikMsg TurnBottomCCW)) [ str "Turn right inner disk, counter clockwise" ]
+      // buttonLink "" (fun _ -> dispatch (RubikMsg TurnEastCW)) [ str "Turn bottom disk, clockwise" ]
+      // buttonLink "" (fun _ -> dispatch (RubikMsg TurnEastCCW)) [ str "Turn bottom disk, counter clockwise" ]
+      // buttonLink "" (fun _ -> dispatch (RubikMsg TurnTopCW)) [ str "Turn bottom inner disk, clockwise" ]
+      // buttonLink "" (fun _ -> dispatch (RubikMsg TurnTopCCW)) [ str "Turn bottom inner disk, counter clockwise" ]
     ]
