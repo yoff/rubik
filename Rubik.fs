@@ -719,23 +719,23 @@ let render (model:Model) =
 
 /// Arrow buttons
 let largeArrow =
-  "M 5 5
-   A 49 47 0 0 1 20 90
-   L 25 95
-   L 10 95
-   L 10 80
-   L 15 85
-   A 49 47 0 0 0 5 5
+  "M 15 5
+   A 49 47 0 0 1 43 85
+   L 45 95
+   L 20 92
+   L 25 65
+   L 31 70
+   A 45 43 0 0 0 15 5
    Z"
 
 let smallArrow =
-  "M 5 20
-   A 40 35 0 0 1 17 70
-   L 20 73
-   L 10 73
-   L 10 63
-   L 13 66
-   A 40 35 0 0 0 5 20
+  "M 5 15
+   A 40 32 0 0 1 17 64
+   L 17 71
+   L 5 70
+   L 5 56
+   L 11 57
+   A 43 33 0 0 0  5 15
    Z"
 
 let arrowsBottom dispatch turnLarge turnSmall =
