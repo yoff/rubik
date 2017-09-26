@@ -719,36 +719,43 @@ let render (model:Model) =
 
 /// Arrow buttons
 let largeArrow =
-  "M 15 5
-   A 49 47 0 0 1 43 85
-   L 45 95
-   L 20 92
-   L 25 65
-   L 31 70
-   A 45 43 0 0 0 15 5
+  "M 0 0
+   A 40 40 0 0 0 20 -20
+   A 30 30 0 0 0 12 -23
+   A 50 50 0 0 0 -65 -63
+   A 40 40 0 0 1 -12 -23
+   A 30 30 0 0 0 -20 -20
+   A 40 40 0 0 0 0 0
    Z"
 
 let smallArrow =
-  "M 5 15
-   A 40 32 0 0 1 17 64
-   L 17 71
-   L 5 70
-   L 5 56
-   L 11 57
-   A 43 33 0 0 0  5 15
+  "M 0 0
+   A 24 24 0 0 0 12 -12
+   A 18 18 0 0 0 7 -14
+   A 30 30 0 0 0 -39 -38
+   A 24 24 0 0 1 -7 -14
+   A 18 18 0 0 0 -12 -12
+   A 24 24 0 0 0 0 0
    Z"
 
 let arrowsBottom dispatch turnLarge turnSmall =
   [ g
-      [ OnClick (fun _ -> dispatch (RubikMsg turnLarge)) ]
+      [ Transform "translate(20,95),rotate(45,0,0)" :> IProp
+        OnClick (fun _ -> dispatch (RubikMsg turnLarge)) :> IProp
+      ]
       [ path [ D largeArrow ] [] ]
     g
-      [ OnClick (fun _ -> dispatch (RubikMsg turnSmall)) ]
+      [ Transform "translate(5,60),rotate(45,0,0)" :> IProp
+        OnClick (fun _ -> dispatch (RubikMsg turnSmall)) :> IProp ]
       [ path [ D smallArrow ] [] ]    
   ]
 
 let arrows dispatch =
-  [ g [ Transform "translate(300,600)" ] (arrowsBottom dispatch TurnEastCW TurnTopCW)
+  [ g
+      [ Transform "translate(300,600)" :> IProp
+        ClassName "arrows" :> IProp
+      ]
+      (arrowsBottom dispatch TurnEastCW TurnTopCW)
     g [ Transform "translate(300,600),scale(-1,1)" ] (arrowsBottom dispatch TurnEastCCW TurnTopCCW)
     g [ Transform "translate(300,600),rotate(120,0,-300)" ] (arrowsBottom dispatch TurnNorthCW TurnWestCW)
     g [ Transform "translate(300,600),rotate(120,0,-300),scale(-1,1)" ] (arrowsBottom dispatch TurnNorthCCW TurnWestCCW)
