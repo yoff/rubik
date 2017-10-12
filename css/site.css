@@ -167,8 +167,15 @@ body {
      width: "100%";
 }
 
-svg.faces {
-    fill: blue;
+svg g.faces {
+    stroke: black;
+    stroke-width: 3;
+    width: 600;
+    height: 600;
+}
+
+svg g.arrows {
+    fill: grey;
     stroke: black;
     stroke-width: 3;
     width: 600;
