@@ -19,8 +19,32 @@ let timerTick dispatch =
         dispatch (Tick DateTime.Now |> RubikMsg)
     , 100) |> ignore
 
+let timerSub _ = Cmd.ofSub timerTick
 
-let subscription _ = Cmd.ofSub timerTick
+let mapKey keyCode =
+  match keyCode with
+  | 81.0 -> Some RubikMsg.TurnNorthCCW // Q
+  | 65.0 -> Some RubikMsg.TurnNorthCW // A
+  | 87.0 -> Some RubikMsg.TurnWestCCW // W
+  | 83.0 -> Some RubikMsg.TurnWestCW // S
+  | 89.0 -> Some RubikMsg.TurnSouthCW // Y
+  | 71.0 -> Some RubikMsg.TurnSouthCCW // G
+  | 84.0 -> Some RubikMsg.TurnBottomCW // T
+  | 70.0 -> Some RubikMsg.TurnBottomCCW // F
+  | 90.0 -> Some RubikMsg.TurnEastCCW // Z
+  | 86.0 -> Some RubikMsg.TurnEastCW // v
+  | 88.0 -> Some RubikMsg.TurnTopCCW // X
+  | 67.0 -> Some RubikMsg.TurnTopCW // C
+  | _ -> None
+
+let keyEvent dispatch =
+  window.addEventListener_keydown(fun e ->
+    match mapKey e.keyCode with
+    | Some msg -> dispatch (msg |> RubikMsg)
+    | None -> ()
+    :> obj)
+
+let keySub _ = Cmd.ofSub keyEvent
 
 /// Model
 
@@ -730,32 +754,28 @@ let largeArrow =
 
 let smallArrow =
   "M 0 0
-   A 24 24 0 0 0 12 -12
-   A 18 18 0 0 0 7 -14
-   A 30 30 0 0 0 -39 -38
-   A 24 24 0 0 1 -7 -14
-   A 18 18 0 0 0 -12 -12
-   A 24 24 0 0 0 0 0
+   A 32 32 0 0 0 16 -16
+   A 24 24 0 0 0 10 -18
+   A 40 40 0 0 0 -52 -50
+   A 32 32 0 0 1 -10 -18
+   A 24 24 0 0 0 -16 -16
+   A 32 32 0 0 0 0 0
    Z"
 
 let arrowsBottom dispatch turnLarge turnSmall =
   [ g
-      [ Transform "translate(20,95),rotate(45,0,0)" :> IProp
+      [ Transform "translate(45,95),rotate(40,0,0)" :> IProp
         OnClick (fun _ -> dispatch (RubikMsg turnLarge)) :> IProp
       ]
       [ path [ D largeArrow ] [] ]
     g
-      [ Transform "translate(5,60),rotate(45,0,0)" :> IProp
+      [ Transform "translate(7,77),rotate(55,0,0)" :> IProp
         OnClick (fun _ -> dispatch (RubikMsg turnSmall)) :> IProp ]
-      [ path [ D smallArrow ] [] ]    
+      [ path [ D smallArrow ] [] ]
   ]
 
 let arrows dispatch =
-  [ g
-      [ Transform "translate(300,600)" :> IProp
-        ClassName "arrows" :> IProp
-      ]
-      (arrowsBottom dispatch TurnEastCW TurnTopCW)
+  [ g [ Transform "translate(300,600)" ] (arrowsBottom dispatch TurnEastCW TurnTopCW)
     g [ Transform "translate(300,600),scale(-1,1)" ] (arrowsBottom dispatch TurnEastCCW TurnTopCCW)
     g [ Transform "translate(300,600),rotate(120,0,-300)" ] (arrowsBottom dispatch TurnNorthCW TurnWestCW)
     g [ Transform "translate(300,600),rotate(120,0,-300),scale(-1,1)" ] (arrowsBottom dispatch TurnNorthCCW TurnWestCCW)
@@ -763,15 +783,38 @@ let arrows dispatch =
     g [ Transform "translate(300,600),rotate(240,0,-300),scale(-1,1)" ] (arrowsBottom dispatch TurnSouthCCW TurnBottomCCW)
   ]
 
+let shortcutsBottom tInv largeCW largeCCW smallCW smallCCW =
+  [ g
+      [ Transform ((15, 42, tInv) |||> sprintf "translate(%d,%d),%s") ]
+      [ text [ TextAnchor "middle"; unbox ("alignment-baseline", "middle"); Y (U2.Case1 5.0) ] [ str smallCCW ] ]
+    g
+      [ Transform ((-15, 42, tInv) |||> sprintf "translate(%d,%d),%s") ]
+      [ text [ TextAnchor "middle"; unbox ("alignment-baseline", "middle"); Y (U2.Case1 5.0) ] [ str smallCW ] ]
+    g
+      [ Transform ((83, 86, tInv) |||> sprintf "translate(%d,%d),%s") ]
+      [ text [ TextAnchor "middle"; unbox ("alignment-baseline", "middle"); Y (U2.Case1 5.0) ] [ str largeCCW ] ]
+    g
+      [ Transform ((-83, 86, tInv) |||> sprintf "translate(%d,%d),%s") ]
+      [ text [ TextAnchor "middle"; unbox ("alignment-baseline", "middle"); Y (U2.Case1 5.0) ] [ str largeCW ] ]
+
+  ]
+
+let shortcuts =
+  [ g [ Transform "translate(300,600)" ] (shortcutsBottom "rotate(0,0,0)" "Z" "V" "X" "C")
+    g [ Transform "translate(300,600),rotate(120,0,-300)" ] (shortcutsBottom "rotate(-120,0,0)" "Q" "A" "W" "S")
+    g [ Transform "translate(300,600),rotate(240,0,-300)" ] (shortcutsBottom "rotate(-240,0,0)" "G" "Y" "F" "T")
+  ]
+
 let composition model (dispatch: AppMsg -> unit) =
   [ g [ Transform "translate(100,0)" ]
-      [ yield! render model 
-        yield! arrows dispatch ]
+      [ g [ ClassName "faces" ] (render model)
+        g [ ClassName "arrows" ] (arrows dispatch)
+        g [ ClassName "shortcuts" ] shortcuts ]
   ]
 
 let view (model:Model) (dispatch: AppMsg -> unit) = 
     [ words 60 "Flat Rubik's cube"
-      svg [ ClassName "faces"; Width (U2.Case1 800.0); (*Height (U2.Case1 700.0)*) unbox ("height", "700px") ] (composition model dispatch)
+      svg [ Width (U2.Case1 800.0); (*Height (U2.Case1 700.0)*) unbox ("height", "700px") ] (composition model dispatch)
       buttonLink "" (fun _ -> scramble dispatch) [ str "Scramble!" ]
       // buttonLink "" (fun _ -> dispatch (RubikMsg TurnNorthCW)) [ str "Turn left disk, clockwise" ]
       // buttonLink "" (fun _ -> dispatch (RubikMsg TurnNorthCCW)) [ str "Turn left disk, counter clockwise" ]
