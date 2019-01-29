@@ -763,6 +763,9 @@ let testFaceTurn turn v fileName =
   |> toSVG
   |> saveSVG fileName
 
-testFaceTurn { face = North; direction = Clockwise } (pi/4.0) "testTurnNorth.svg"
-testFaceTurn { face = East; direction = Clockwise } (pi/4.0) "testTurnEast.svg"
-testFaceTurn { face = South; direction = Clockwise } (pi/4.0) "testTurnSouth.svg"
+// testFaceTurn { face = North; direction = Clockwise } (pi/4.0) "testTurnNorth.svg"
+// testFaceTurn { face = East; direction = Clockwise } (pi/4.0) "testTurnEast.svg"
+// testFaceTurn { face = South; direction = Clockwise } (pi/4.0) "testTurnSouth.svg"
+testFaceTurn { face = West; direction = Clockwise } (pi/4.0) "testTurnWest.svg"
+testFaceTurn { face = Top; direction = Clockwise } (pi/4.0) "testTurnTop.svg"
+testFaceTurn { face = Bottom; direction = Clockwise } (pi/4.0) "testTurnBottom.svg"

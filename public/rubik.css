@@ -1,0 +1,28 @@
+h1.title {
+    display: block;
+    text-align: center;
+}
+
+.centered {
+    display: block;
+    margin: auto;
+}
+
+svg g.faces {
+    stroke: black;
+    stroke-width: 3;
+    width: 600;
+    height: 600;
+}
+
+svg g.arrows {
+    fill: grey;
+    stroke: black;
+    stroke-width: 3;
+    width: 600;
+    height: 600;
+}
+
+.spacer {
+    margin-top: 1.5em;
+}

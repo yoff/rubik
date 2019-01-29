@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600">
+  <path
+    style="stroke:black; stroke-width:3; fill:none"
+    d="M 605.283430 126.350119
+       L 300.000000 173.920599"
+  />
+  <path
+    style="stroke:black; stroke-width:3; fill:none"
+    d="M -5.283430 126.350119
+       L 187.940470 367.950013"
+  />
+  <path
+    style="stroke:black; stroke-width:3; fill:none"
+    d="M 300.000000 654.943849
+       L 412.059530 367.950013"
+  />
+</svg>
