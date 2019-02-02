@@ -601,37 +601,19 @@ let faceStyle colour =
   
 let colour c = t >> toQLoop (faceStyle c)
 
-let nearCornerNorth n style =
+let nearCorner v1 v2 m n style =
   let p1 =
     (down (faceLine n |> mXZ |> fZ))
-    |> fX
+    |> fX |> m
     |> t
   let p2 =
     (up (faceLine n |> mXZ |> fZ))
-    |> fX |> mXZ
+    |> fX |> mXZ |> m
     |> t
-  let x1 = 300.0 + 297.0 * cos (pi / 6.0)
-  let y1 = 300.0 - 297.0 * sin (pi / 6.0)
-  p1 @ List.tail p2
-  |> toQs
-  |> fun s -> sprintf "%s\n       L %f %f" s x1 y1
-  |> sprintf "%s\n       A 297 297 0 0 1 300 597"
-  |> loop
-  |> wrapPath style
-
-let nearCornerEast n style =
-  let p1 =
-    (down (faceLine n |> mXZ |> fZ))
-    |> fX |> rot
-    |> t
-  let p2 =
-    (up (faceLine n |> mXZ |> fZ))
-    |> fX |> mXZ |> rot
-    |> t
-  let x1 = 300.0 + 297.0 * cos (5.0 * pi / 6.0)
-  let y1 = 300.0 - 297.0 * sin (5.0 * pi / 6.0)
-  let x2 = 300.0 + 297.0 * cos (pi / 6.0)
-  let y2 = 300.0 - 297.0 * sin (pi / 6.0)
+  let x1 = 300.0 + 297.0 * cos (v1 * pi)
+  let y1 = 300.0 - 297.0 * sin (v1 * pi)
+  let x2 = 300.0 + 297.0 * cos (v2 * pi)
+  let y2 = 300.0 - 297.0 * sin (v2 * pi)
   p1 @ List.tail p2
   |> toQs
   |> fun s -> sprintf "%s\n       L %f %f" s x1 y1
@@ -639,23 +621,9 @@ let nearCornerEast n style =
   |> loop
   |> wrapPath style
 
-let nearCornerSouth n style =
-  let p1 =
-    (down (faceLine n |> mXZ |> fZ))
-    |> fX |> rot |> rot
-    |> t
-  let p2 =
-    (up (faceLine n |> mXZ |> fZ))
-    |> fX |> mXZ |> rot |> rot
-    |> t
-  let x2 = 300.0 + 297.0 * cos (5.0 * pi / 6.0)
-  let y2 = 300.0 - 297.0 * sin (5.0 * pi / 6.0)
-  p1 @ List.tail p2
-  |> toQs
-  |> sprintf "%s\n       L 300 597"
-  |> fun s -> sprintf "%s\n       A 297 297 0 0 1 %f %f" s x2 y2
-  |> loop
-  |> wrapPath style
+let nearCornerNorth = nearCorner (1.0 / 6.0) -0.5 id
+let nearCornerEast = nearCorner (5.0 / 6.0) (1.0 / 6.0) rot
+let nearCornerSouth = nearCorner -0.5 (5.0 / 6.0) (rot >> rot)
 
 let fixCorners a =
   let set i face path a =
