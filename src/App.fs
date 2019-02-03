@@ -17,12 +17,12 @@ open Fable.Import.Browser
 /// Model
 
 type Face =
-  | North
-  | East
-  | South
-  | West
-  | Top
-  | Bottom
+  | NearY
+  | NearZ
+  | NearX
+  | FarY
+  | FarZ
+  | FarX
 
 type Direction =
   | Clockwise
@@ -42,12 +42,12 @@ type Model =
     turning: Turning option }
 
 let initialColouring =
-  [| North
-     East
-     South
-     West
-     Top
-     Bottom
+  [| NearY
+     NearZ
+     NearX
+     FarY
+     FarZ
+     FarX
   |]
   |> Array.collect (Array.create 9)
 
@@ -69,33 +69,33 @@ let timerTick dispatch =
 
 let timerSub _ = Cmd.ofSub timerTick
 
-let turnNorthCCW = Turn { face = North; direction = CounterClockwise}
-let turnNorthCW = Turn { face = North; direction = Clockwise}
-let turnWestCCW = Turn { face = West; direction = CounterClockwise}
-let turnWestCW = Turn { face = West; direction = Clockwise}
-let turnSouthCCW = Turn { face = South; direction = CounterClockwise}
-let turnSouthCW = Turn { face = South; direction = Clockwise}
-let turnBottomCCW = Turn { face = Bottom; direction = CounterClockwise}
-let turnBottomCW = Turn { face = Bottom; direction = Clockwise}
-let turnEastCCW = Turn { face = East; direction = CounterClockwise}
-let turnEastCW = Turn { face = East; direction = Clockwise}
-let turnTopCCW = Turn { face = Top; direction = CounterClockwise}
-let turnTopCW = Turn { face = Top; direction = Clockwise}
+let turnNearYCCW = Turn { face = NearY; direction = CounterClockwise}
+let turnNearYCW = Turn { face = NearY; direction = Clockwise}
+let turnFarYCCW = Turn { face = FarY; direction = CounterClockwise}
+let turnFarYCW = Turn { face = FarY; direction = Clockwise}
+let turnNearXCCW = Turn { face = NearX; direction = CounterClockwise}
+let turnNearXCW = Turn { face = NearX; direction = Clockwise}
+let turnFarXCCW = Turn { face = FarX; direction = CounterClockwise}
+let turnFarXCW = Turn { face = FarX; direction = Clockwise}
+let turnNearZCCW = Turn { face = NearZ; direction = CounterClockwise}
+let turnNearZCW = Turn { face = NearZ; direction = Clockwise}
+let turnFarZCCW = Turn { face = FarZ; direction = CounterClockwise}
+let turnFarZCW = Turn { face = FarZ; direction = Clockwise}
 
 let mapKey keyCode =
   match keyCode with
-  | 81.0 -> Some turnNorthCCW // Q
-  | 65.0 -> Some turnNorthCW // A
-  | 87.0 -> Some turnWestCCW // W
-  | 83.0 -> Some turnWestCW // S
-  | 89.0 -> Some turnSouthCW // Y
-  | 71.0 -> Some turnSouthCCW // G
-  | 84.0 -> Some turnBottomCW // T
-  | 70.0 -> Some turnBottomCCW // F
-  | 90.0 -> Some turnEastCCW // Z
-  | 86.0 -> Some turnEastCW // v
-  | 88.0 -> Some turnTopCCW // X
-  | 67.0 -> Some turnTopCW // C
+  | 81.0 -> Some turnNearYCCW // Q
+  | 65.0 -> Some turnNearYCW // A
+  | 87.0 -> Some turnFarYCCW // W
+  | 83.0 -> Some turnFarYCW // S
+  | 89.0 -> Some turnNearXCW // Y
+  | 71.0 -> Some turnNearXCCW // G
+  | 84.0 -> Some turnFarXCW // T
+  | 70.0 -> Some turnFarXCCW // F
+  | 90.0 -> Some turnNearZCCW // Z
+  | 86.0 -> Some turnNearZCW // v
+  | 88.0 -> Some turnFarZCCW // X
+  | 67.0 -> Some turnFarZCW // C
   | _ -> None
 
 let keyEvent dispatch =
@@ -114,13 +114,13 @@ let scramble dispatch =
   let genMove _ =
     let face = 
       match r.Next (6) with
-      | 0 -> North
-      | 1 -> West
-      | 2 -> South
-      | 3 -> Bottom
-      | 4 -> East
-      | 5 -> Top
-      | _ -> North // Should not happen
+      | 0 -> NearY
+      | 1 -> FarY
+      | 2 -> NearX
+      | 3 -> FarX
+      | 4 -> NearZ
+      | 5 -> FarZ
+      | _ -> NearY // Should not happen
     let direction =
       match r.Next (2) with
       | 0 -> Clockwise
@@ -140,7 +140,7 @@ let flipPerm p =
   |> applyPermutation p
   |> applyPermutation p
 
-let permNorthCW =
+let permNearYCW =
   [|
       yield! [| 0..8 |]
       yield! [| 20; 18; 11; 12; 24; 14; 23; 22; 26 |]
@@ -150,10 +150,10 @@ let permNorthCW =
       yield! [|  9; 46; 10; 48; 15; 16; 13; 52; 17 |]
   |]
 
-let permNorthCCW =
-  flipPerm permNorthCW
+let permNearYCCW =
+  flipPerm permNearYCW
 
-let permWestCW =
+let permFarYCW =
   [|
       yield! [| 0..8 |]
       yield! [| 20; 18; 11; 12; 24; 14; 15; 16; 17 |]
@@ -163,10 +163,10 @@ let permWestCW =
       yield! [|  9; 46; 10; 48; 49; 50; 13; 52; 53 |]
   |]
 
-let permWestCCW =
-  flipPerm permWestCW
+let permFarYCCW =
+  flipPerm permFarYCW
 
-let permSouthCW =
+let permNearXCW =
   [|
       yield! [| 11;  9;  2;  3; 15;  5; 14; 13; 17 |]
       yield! [| 27; 10; 28; 12; 33; 34; 31; 16; 35 |]
@@ -176,10 +176,10 @@ let permSouthCW =
       yield! [| 46; 48; 45; 47; 52; 51; 49; 50; 53 |]
   |]
 
-let permSouthCCW =
-  flipPerm permSouthCW
+let permNearXCCW =
+  flipPerm permNearXCW
 
-let permBottomCW =
+let permFarXCW =
   [|
       yield! [| 11;  9;  2;  3; 15;  5;  6;  7;  8 |]
       yield! [| 27; 10; 28; 12; 13; 14; 31; 16; 17 |]
@@ -189,10 +189,10 @@ let permBottomCW =
       yield! [| 46; 48; 45; 47; 52; 51; 49; 50; 53 |]
   |]
 
-let permBottomCCW =
-  flipPerm permBottomCW
+let permFarXCCW =
+  flipPerm permFarXCW
 
-let permEastCW =
+let permNearZCW =
   [|
       yield! [| 45;  1; 46;  3; 51; 52; 49;  7; 53 |]
       yield! [| 9..17 |]
@@ -202,10 +202,10 @@ let permEastCW =
       yield! [| 29; 27; 47; 48; 33; 50; 32; 31; 35 |]
   |]
 
-let permEastCCW =
-  flipPerm permEastCW
+let permNearZCCW =
+  flipPerm permNearZCW
 
-let permTopCW =
+let permFarZCW =
   [|
       yield! [| 45;  1; 46;  3;  4;  5; 49;  7;  8 |]
       yield! [| 9..17 |]
@@ -215,24 +215,24 @@ let permTopCW =
       yield! [| 29; 27; 47; 48; 33; 50; 51; 52; 53 |]
   |]
 
-let permTopCCW =
-  flipPerm permTopCW
+let permFarZCCW =
+  flipPerm permFarZCW
 
 let apply turn (colouring: Face[]) =
   let perm =
     match turn.face, turn.direction with
-    | North, Clockwise -> permNorthCW
-    | North, CounterClockwise -> permNorthCCW
-    | West, Clockwise -> permWestCW
-    | West, CounterClockwise -> permWestCCW
-    | South, Clockwise -> permSouthCW
-    | South, CounterClockwise -> permSouthCCW
-    | Bottom, Clockwise -> permBottomCW
-    | Bottom, CounterClockwise -> permBottomCCW
-    | East, Clockwise -> permEastCW
-    | East, CounterClockwise -> permEastCCW
-    | Top, Clockwise -> permTopCW
-    | Top, CounterClockwise -> permTopCCW
+    | NearY, Clockwise -> permNearYCW
+    | NearY, CounterClockwise -> permNearYCCW
+    | FarY, Clockwise -> permFarYCW
+    | FarY, CounterClockwise -> permFarYCCW
+    | NearX, Clockwise -> permNearXCW
+    | NearX, CounterClockwise -> permNearXCCW
+    | FarX, Clockwise -> permFarXCW
+    | FarX, CounterClockwise -> permFarXCCW
+    | NearZ, Clockwise -> permNearZCW
+    | NearZ, CounterClockwise -> permNearZCCW
+    | FarZ, Clockwise -> permFarZCW
+    | FarZ, CounterClockwise -> permFarZCCW
   applyPermutation perm colouring
 
 // milliseconds it takes to complete a turn
@@ -460,7 +460,7 @@ let centerB = [| 6; 7; 8 |]
 let moveFace n = Array.map ((+) (9*n))
 
 let indices =
-  [ North,
+  [ NearY,
     [| yield! moveFace 1 edgeLeft
        yield! moveFace 1 centerB
        yield! moveFace 2 edgeRight
@@ -472,7 +472,7 @@ let indices =
        yield! moveFace 5 centerA
     |]
     // |> Array.sort
-  ; East,
+  ; NearZ,
     [| yield! edgeRight
        yield! centerA
        yield! moveFace 2 edgeLeft
@@ -484,7 +484,7 @@ let indices =
        yield! moveFace 5 centerB
     |]
     // |> Array.sort
-  ; South,
+  ; NearX,
     [| yield! edgeLeft
        yield! centerB
        yield! moveFace 1 edgeRight
@@ -496,7 +496,7 @@ let indices =
        yield! moveFace 5 [|0..8|]
     |]
     // |> Array.sort
-  ; West,
+  ; FarY,
     [| yield! moveFace 1 edgeLeft
        yield! moveFace 2 edgeRight
        yield! moveFace 3 [|0..8|]
@@ -504,7 +504,7 @@ let indices =
        yield! moveFace 5 edgeRight
     |]
     // |> Array.sort
-  ; Top,
+  ; FarZ,
     [| yield! edgeRight
        yield! moveFace 2 edgeLeft
        yield! moveFace 3 edgeRight
@@ -512,7 +512,7 @@ let indices =
        yield! moveFace 5 edgeLeft
     |]
     // |> Array.sort
-  ; Bottom,
+  ; FarX,
     [| yield! edgeLeft
        yield! moveFace 1 edgeRight
        yield! moveFace 3 edgeLeft
@@ -532,7 +532,7 @@ let rec pairs l =
 
 let toQs points =
   match points with
-  | [] | [_] | [_;_] -> failwith "Too few points (need at least three)"
+  | [] | [_] | [_;_] -> failwith "Too few points (need at lNearZ three)"
   | (x,y)::ps ->
     ps
     |> pairs
@@ -574,7 +574,7 @@ let proj = projPot 0.8
 
 let toView = add p >> mul m
 
-let toPlane = toView >> proj
+let FarZlane = toView >> proj
 
 let toScreenCanvas xMin yMin xMax yMax targetWidth v =
   let width = xMax - xMin
@@ -586,21 +586,24 @@ let width = 600.0
 let windowRadius = 2.5
 
 let toScreen = toScreenCanvas -windowRadius -windowRadius windowRadius windowRadius width
-let t = toPlane >> toScreen |> List.map
+let t = FarZlane >> toScreen |> List.map
 
 let faceColour = function
-  | North -> "green"
-  | East -> "orange"
-  | South -> "purple"
-  | West -> "red"
-  | Top -> "blue"
-  | Bottom -> "yellow"
+  | NearY -> "green"
+  | NearZ -> "orange"
+  | NearX -> "purple"
+  | FarY -> "red"
+  | FarZ -> "blue"
+  | FarX -> "yellow"
   
 let faceStyle colour =
   [ Fill colour ]
   
 let colour c = t >> toQLoop (faceStyle c)
 
+let halfWidth = width / 2.0
+let inset = 3.0
+let insetHalfWidth = halfWidth - inset
 let nearCorner v1 v2 m n style =
   let p1 =
     (down (faceLine n |> mXZ |> fZ))
@@ -610,29 +613,29 @@ let nearCorner v1 v2 m n style =
     (up (faceLine n |> mXZ |> fZ))
     |> fX |> mXZ |> m
     |> t
-  let x1 = 300.0 + 297.0 * cos (v1 * pi)
-  let y1 = 300.0 - 297.0 * sin (v1 * pi)
-  let x2 = 300.0 + 297.0 * cos (v2 * pi)
-  let y2 = 300.0 - 297.0 * sin (v2 * pi)
+  let x1 = halfWidth + insetHalfWidth * cos (v1 * pi)
+  let y1 = halfWidth - insetHalfWidth * sin (v1 * pi)
+  let x2 = halfWidth + insetHalfWidth * cos (v2 * pi)
+  let y2 = halfWidth - insetHalfWidth * sin (v2 * pi)
   p1 @ List.tail p2
   |> toQs
   |> fun s -> sprintf "%s\n       L %f %f" s x1 y1
-  |> fun s -> sprintf "%s\n       A 297 297 0 0 1 %f %f" s x2 y2
+  |> fun s -> sprintf "%s\n       A %f %f 0 0 1 %f %f" s insetHalfWidth insetHalfWidth x2 y2
   |> loop
   |> wrapPath style
 
-let nearCornerNorth = nearCorner (1.0 / 6.0) -0.5 id
-let nearCornerEast = nearCorner (5.0 / 6.0) (1.0 / 6.0) rot
-let nearCornerSouth = nearCorner -0.5 (5.0 / 6.0) (rot >> rot)
+let nearCornerNearY = nearCorner (1.0 / 6.0) -0.5 id
+let nearCornerNearZ = nearCorner (5.0 / 6.0) (1.0 / 6.0) rot
+let nearCornerNearX = nearCorner -0.5 (5.0 / 6.0) (rot >> rot)
 
 let fixCorners a =
   let set i face path a =
     Array.set a i (faceColour face |> faceStyle |> path)
     a
   a
-  |> set 3 North (nearCornerNorth 6)
-  |> set 12 South (nearCornerSouth 6)
-  |> set 21 East (nearCornerEast 6)
+  |> set 3 NearY (nearCornerNearY 6)
+  |> set 12 NearX (nearCornerNearX 6)
+  |> set 21 NearZ (nearCornerNearZ 6)
 
 /// 3D manipulations
 let mRotX v =
@@ -655,12 +658,12 @@ let mRotZ v =
 
 let turnM turn =
   match turn.face with
-  | North -> mRotY
-  | East -> mRotZ
-  | South -> mRotX
-  | West -> mRotY
-  | Top -> mRotZ
-  | Bottom -> mRotX
+  | NearY -> mRotY
+  | NearZ -> mRotZ
+  | NearX -> mRotX
+  | FarY -> mRotY
+  | FarZ -> mRotZ
+  | FarX -> mRotX
 
 let render (model:Model) =
   match model.turning with
@@ -701,7 +704,7 @@ let smallArrow =
    A 32 32 0 0 0 0 0
    Z"
 
-let arrowsBottom dispatch turnLarge turnSmall =
+let arrowsFarX dispatch turnLarge turnSmall =
   [ g
       [ SVGAttr.Transform "translate(45,95),rotate(40,0,0)" //:> IProp
         OnClick (fun _ -> dispatch turnLarge) //:> IProp
@@ -714,15 +717,15 @@ let arrowsBottom dispatch turnLarge turnSmall =
   ]
 
 let arrows dispatch =
-  [ g [ SVGAttr.Transform "translate(300,600)" ] (arrowsBottom dispatch turnEastCW turnTopCW)
-    g [ SVGAttr.Transform "translate(300,600),scale(-1,1)" ] (arrowsBottom dispatch turnEastCCW turnTopCCW)
-    g [ SVGAttr.Transform "translate(300,600),rotate(120,0,-300)" ] (arrowsBottom dispatch turnNorthCW turnWestCW)
-    g [ SVGAttr.Transform "translate(300,600),rotate(120,0,-300),scale(-1,1)" ] (arrowsBottom dispatch turnNorthCCW turnWestCCW)
-    g [ SVGAttr.Transform "translate(300,600),rotate(240,0,-300)" ] (arrowsBottom dispatch turnSouthCW turnBottomCW)
-    g [ SVGAttr.Transform "translate(300,600),rotate(240,0,-300),scale(-1,1)" ] (arrowsBottom dispatch turnSouthCCW turnBottomCCW)
+  [ g [ SVGAttr.Transform "translate(300,600)" ] (arrowsFarX dispatch turnNearZCW turnFarZCW)
+    g [ SVGAttr.Transform "translate(300,600),scale(-1,1)" ] (arrowsFarX dispatch turnNearZCCW turnFarZCCW)
+    g [ SVGAttr.Transform "translate(300,600),rotate(120,0,-300)" ] (arrowsFarX dispatch turnNearYCW turnFarYCW)
+    g [ SVGAttr.Transform "translate(300,600),rotate(120,0,-300),scale(-1,1)" ] (arrowsFarX dispatch turnNearYCCW turnFarYCCW)
+    g [ SVGAttr.Transform "translate(300,600),rotate(240,0,-300)" ] (arrowsFarX dispatch turnNearXCW turnFarXCW)
+    g [ SVGAttr.Transform "translate(300,600),rotate(240,0,-300),scale(-1,1)" ] (arrowsFarX dispatch turnNearXCCW turnFarXCCW)
   ]
 
-let shortcutsBottom tInv largeCW largeCCW smallCW smallCCW =
+let shortcutsFarX tInv largeCW largeCCW smallCW smallCCW =
   [ g
       [ SVGAttr.Transform ((15, 42, tInv) |||> sprintf "translate(%d,%d),%s") ]
       [ text [ SVGAttr.TextAnchor "middle"; SVGAttr.Custom ("alignment-baseline", "middle"); Y 5.0 ] [ str smallCCW ] ]
@@ -738,9 +741,9 @@ let shortcutsBottom tInv largeCW largeCCW smallCW smallCCW =
   ]
 
 let shortcuts =
-  [ g [ SVGAttr.Transform "translate(300,600)" ] (shortcutsBottom "rotate(0,0,0)" "Z" "V" "X" "C")
-    g [ SVGAttr.Transform "translate(300,600),rotate(120,0,-300)" ] (shortcutsBottom "rotate(-120,0,0)" "Q" "A" "W" "S")
-    g [ SVGAttr.Transform "translate(300,600),rotate(240,0,-300)" ] (shortcutsBottom "rotate(-240,0,0)" "G" "Y" "F" "T")
+  [ g [ SVGAttr.Transform "translate(300,600)" ] (shortcutsFarX "rotate(0,0,0)" "Z" "V" "X" "C")
+    g [ SVGAttr.Transform "translate(300,600),rotate(120,0,-300)" ] (shortcutsFarX "rotate(-120,0,0)" "Q" "A" "W" "S")
+    g [ SVGAttr.Transform "translate(300,600),rotate(240,0,-300)" ] (shortcutsFarX "rotate(-240,0,0)" "G" "Y" "F" "T")
   ]
 
 let composition model (dispatch: Message -> unit) =
