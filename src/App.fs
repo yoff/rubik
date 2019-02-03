@@ -541,7 +541,7 @@ let toQs points =
     |> sprintf "M %f %f\n       %s" x y
 
 let wrapPath style p =
-  path ((Style style :> IProp) :: [D p]) [] 
+  path ((ClassName style :> IProp) :: [D p]) [] 
 
 let loop =
   sprintf "%s\n       z"
@@ -589,17 +589,14 @@ let toScreen = toScreenCanvas -windowRadius -windowRadius windowRadius windowRad
 let t = FarZlane >> toScreen |> List.map
 
 let faceColour = function
-  | NearY -> "green"
-  | NearZ -> "orange"
-  | NearX -> "purple"
-  | FarY -> "red"
-  | FarZ -> "blue"
-  | FarX -> "yellow"
+  | NearY -> "NearY"
+  | NearZ -> "NearZ"
+  | NearX -> "NearX"
+  | FarY -> "FarY"
+  | FarZ -> "FarZ"
+  | FarX -> "FarX"
   
-let faceStyle colour =
-  [ Fill colour ]
-  
-let colour c = t >> toQLoop (faceStyle c)
+let colour c = t >> toQLoop c
 
 let halfWidth = width / 2.0
 let inset = 3.0
@@ -624,18 +621,18 @@ let nearCorner v1 v2 m n style =
   |> loop
   |> wrapPath style
 
-let nearCornerNearY = nearCorner (1.0 / 6.0) -0.5 id
-let nearCornerNearZ = nearCorner (5.0 / 6.0) (1.0 / 6.0) rot
-let nearCornerNearX = nearCorner -0.5 (5.0 / 6.0) (rot >> rot)
+let nearCornerY = nearCorner (1.0 / 6.0) -0.5 id
+let nearCornerZ = nearCorner (5.0 / 6.0) (1.0 / 6.0) rot
+let nearCornerX = nearCorner -0.5 (5.0 / 6.0) (rot >> rot)
 
 let fixCorners a =
   let set i face path a =
-    Array.set a i (faceColour face |> faceStyle |> path)
+    Array.set a i (faceColour face |> path)
     a
   a
-  |> set 3 NearY (nearCornerNearY 6)
-  |> set 12 NearX (nearCornerNearX 6)
-  |> set 21 NearZ (nearCornerNearZ 6)
+  |> set 3 NearY (nearCornerY 6)
+  |> set 12 NearX (nearCornerX 6)
+  |> set 21 NearZ (nearCornerZ 6)
 
 /// 3D manipulations
 let mRotX v =
