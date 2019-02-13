@@ -1,18 +1,12 @@
 module App
 
-(**
- The famous Increment/Decrement ported from Elm.
- You can find more info about Emish architecture and samples at https://elmish.github.io/
-*)
 open System
-
 open Elmish
 open Elmish.React
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
-
 open Fable.Import.Browser
-// open Fable.Core.JsInterop
+
 
 /// Model
 
@@ -55,7 +49,8 @@ let init () =
   { colouring = initialColouring
     turning = None }
 
-/// Messages - not used yet
+
+/// Messages
 
 type Message =
   | Turn of Turn
@@ -130,6 +125,7 @@ let scramble dispatch =
   [1..n]
   |> List.map genMove
   |> List.iter dispatch
+
 
 /// Update
 let applyPermutation p (colouring: 'a[]) =
@@ -266,6 +262,7 @@ let update (msg:Message) model : Model =
   | Turn turn ->
     let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
     setTurning turning
+
 
 /// View
 
@@ -752,8 +749,8 @@ let composition model (dispatch: Message -> unit) =
 
 let view (model:Model) (dispatch: Dispatch<Message>) = 
   div [ Class "main" ]
-    [ h1 [ Class "title"] [str "Flat Rubik's cube"]
-      svg [Class "centered"; SVGAttr.Width 800.0; SVGAttr.Height 700.0 ] (composition model dispatch)
+    [ h1 [ Class "title" ] [ str "Flat Rubik's cube" ]
+      svg [ Class "centered"; SVGAttr.ViewBox <| sprintf "0 0 %d %d" 800 700 ] (composition model dispatch)
       div [ Class "spacer" ] []
       button [ Class "centered"; OnClick (fun _ -> scramble dispatch) ] [ str "Scramble!" ]
     ]
