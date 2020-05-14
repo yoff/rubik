@@ -3,9 +3,9 @@ module App
 open System
 open Elmish
 open Elmish.React
-open Fable.Helpers.React
-open Fable.Helpers.React.Props
-open Fable.Import.Browser
+open Fable.React
+open Fable.React.Props
+open Fable.Import
 
 
 /// Model
@@ -31,9 +31,25 @@ type Turning =
     started: DateTime
     progress: float } // should run from 0.0 to 1.0 completing the turn
 
+type Posibilities = ((float * float) * Face) list
+
+type DragAxis =
+  | Posibilities of Posibilities
+  | Resolved of (float * float) * Face
+
+type DraggingTo =
+  { dragStart: float * float
+    dragEnd: float * float
+    dragAxis: DragAxis }
+
+type Dragging =
+  | AboutTo of (float * float) * Posibilities
+  | DraggingTo of DraggingTo
+
 type Model =
   { colouring: Face[]
-    turning: Turning option }
+    turning: Turning option
+    dragging: Dragging option }
 
 let initialColouring =
   [| NearY
@@ -47,7 +63,8 @@ let initialColouring =
 
 let init () =
   { colouring = initialColouring
-    turning = None }
+    turning = None
+    dragging = None }
 
 
 /// Messages
@@ -55,10 +72,13 @@ let init () =
 type Message =
   | Turn of Turn
   | Tick of DateTime
+  | StartDrag of (float * float) * Posibilities
+  | ContinueDrag of float * float
+  | EndDrag of float * float
 
 /// Animation
 let timerTick dispatch =
-    window.setInterval(fun _ -> 
+    Browser.Dom.window.setInterval(fun _ -> 
         dispatch (Tick DateTime.Now)
     , 100) |> ignore
 
@@ -94,11 +114,12 @@ let mapKey keyCode =
   | _ -> None
 
 let keyEvent dispatch =
-  window.addEventListener_keydown(fun e ->
-    match mapKey e.keyCode with
+  Browser.Dom.window.addEventListener ("keydown", fun e ->
+    let ke: Browser.Types.KeyboardEvent = downcast e
+    match mapKey ke.keyCode with
     | Some msg -> dispatch msg
     | None -> ()
-    :> obj)
+  )
 
 let keySub _ = Cmd.ofSub keyEvent
 
@@ -246,7 +267,8 @@ let updateTick t (model: Model) =
       { model with turning = Some newTurning }
     else
       { colouring = apply turning.turn model.colouring
-        turning = None }
+        turning = None
+        dragging = None }
 
 let update (msg:Message) model : Model =
   let setTurning turning =
@@ -255,13 +277,50 @@ let update (msg:Message) model : Model =
       { model with turning = Some turning }
     | Some currentlyTurning ->
       { colouring = apply currentlyTurning.turn model.colouring
-        turning = Some turning }
+        turning = Some turning
+        dragging = None }
   match msg with
   | Tick t ->
     updateTick t model
   | Turn turn ->
     let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
     setTurning turning
+  | StartDrag ((x, y), axes) ->
+    { model with dragging = Some <| AboutTo ((x, y), axes) }
+  | ContinueDrag (x, y) ->
+    match model.dragging with
+    | Some (AboutTo (_, [])) ->
+      { model with dragging = None }
+    | Some (AboutTo ((ax, ay), [axis])) ->
+      { model with dragging = Some <| DraggingTo { dragStart = (ax, ay); dragEnd = (x, y); dragAxis = Resolved axis} }
+    | Some (AboutTo ((ax, ay), axes)) ->
+      { model with dragging = Some <| DraggingTo { dragStart = (ax, ay); dragEnd = (x, y); dragAxis = Posibilities axes} }
+    | Some (DraggingTo dt) ->
+      match dt.dragAxis with
+      | Resolved ((ax, ay), face) as r ->
+        let (xs, ys) = dt.dragStart
+        let (xv, yv) = (x - xs, y - ys)
+        let cross = (xs - ax)*yv - (ys - ay)*xv
+        if Math.Abs cross > 10.0 then
+          let turn = { face = face; direction = if cross > 0.0 then Clockwise else CounterClockwise } 
+          let turning = { turn = turn; started = System.DateTime.Now; progress = 0.0 }
+          { model with dragging = None; turning = Some turning }
+        else
+          { model with dragging = Some <| DraggingTo { dragStart = dt.dragStart; dragEnd = (x, y); dragAxis = r } }
+      | Posibilities ps -> // can assume that ps has more than 1 element
+        let (xs, ys) = dt.dragStart
+        let (xv, yv) = (x - xs, y - ys)
+        let dot (x, y) = (xs - x)*xv + (ys - y)*yv |> Math.Abs
+        let dots = ps |> List.map (fst >> dot) |> List.sort
+        if dots.[0] * 2.0 < dots.[1] then // if the best is twice as good as the second best, we consider it the winner
+          let r = ps |> List.minBy (fst >> dot)
+          { model with dragging = Some <| DraggingTo { dragStart = dt.dragStart; dragEnd = (x, y); dragAxis = Resolved r } }
+        else
+          { model with dragging = Some <| DraggingTo { dragStart = dt.dragStart; dragEnd = (x, y); dragAxis = dt.dragAxis } }
+    | _ ->
+      model
+  | EndDrag (x, y) ->
+    { model with dragging = None }
 
 
 /// View
@@ -427,27 +486,23 @@ let edges edge =
     edge |> fX |> mXZ
   ]
 
-let paths3D =
+let paths3Dface =
   [ yield! corners (corner 6)
     yield! edges (edge 6)
-    yield! [center 6]
-    yield! corners (corner 6) |> List.map rot
-    yield! edges (edge 6) |> List.map rot
-    yield! [center 6] |> List.map rot
-    yield! corners (corner 6) |> List.map (rot >> rot)
-    yield! edges (edge 6) |> List.map (rot >> rot)
-    yield! [center 6] |> List.map (rot >> rot)
-    yield! corners (corner 6 |> fY)
-    yield! edges (edge 6 |> fY)
-    yield! [center 6] |> List.map fY
-    yield! corners (corner 6 |> fY) |> List.map rot
-    yield! edges (edge 6 |> fY) |> List.map rot
-    yield! [center 6] |> List.map (fY >> rot)
-    yield! corners (corner 6 |> fY) |> List.map (rot >> rot)
-    yield! edges (edge 6 |> fY) |> List.map (rot >> rot)
-    yield! [center 6] |> List.map (fY >> rot >> rot)
+    yield  center 6
   ]
-  |> Array.ofList
+
+let faceToFull facePaths =
+  [ yield! facePaths
+    yield! facePaths |> List.map rot
+    yield! facePaths |> List.map (rot >> rot)
+    yield! facePaths |> List.map fY
+    yield! facePaths |> List.map (fY >> rot)
+    yield! facePaths |> List.map (fY >> rot >> rot)
+  ]
+
+let paths3D =
+  faceToFull paths3Dface |> Array.ofList
 
 /// Selection
 let edgeLeft = [| 0; 1; 4 |]
@@ -537,16 +592,46 @@ let toQs points =
     |> String.concat "\n       "
     |> sprintf "M %f %f\n       %s" x y
 
-let wrapPath style p =
-  path ((ClassName style :> IProp) :: [D p]) [] 
+
+module SVGInterop =
+    open Fable.Core
+
+    type [<AllowNullLiteral>] SVGMatrix =
+      abstract inverse: unit -> SVGMatrix
+
+    [<Emit("$1.getScreenCTM()")>]
+    let [<Global>] getScreenCTM s : SVGMatrix = jsNative
+
+    type [<AllowNullLiteral>] SVGPoint =
+        abstract x: float with get, set
+        abstract y: float with get, set
+        abstract matrixTransform: matrix: SVGMatrix -> SVGPoint
+
+    [<Emit("var pt=$0.createSVGPoint();pt.x=$1;pt.y=$2;pt")>]
+    let mkPoint s x y : SVGPoint = jsNative
+
+let svgCoords (x, y) =
+  let s = Browser.Dom.document.getElementById("flatCube")
+  let ctm = (SVGInterop.getScreenCTM s).inverse ()
+  let p = (SVGInterop.mkPoint s x y).matrixTransform ctm
+  (p.x - 100.0, p.y)
+
+let dragProps axes dispatch =
+  [ OnMouseDown (fun e -> dispatch <| StartDrag (svgCoords (e.clientX, e.clientY), axes)) :> IProp
+    OnMouseMove (fun e -> dispatch <| ContinueDrag (svgCoords (e.clientX, e.clientY))) :> IProp
+    OnMouseUp (fun e -> dispatch <| EndDrag (e.clientX, e.clientY)) :> IProp
+  ]
+
+let wrapPath props p =
+  path ((D p :> IProp) :: props) [] 
 
 let loop =
   sprintf "%s\n       z"
 
-let toQLoop style points =
+let toQLoop props points =
   toQs points
   |> loop
-  |> wrapPath style
+  |> wrapPath props
 
 let m =
   { r1 = { x = -0.7071067690849304; y = 0.7071067690849304; z = 0.0}
@@ -593,7 +678,8 @@ let faceColour = function
   | FarZ -> "FarZ"
   | FarX -> "FarX"
   
-let colour c = t >> toQLoop c
+let draw props = t >> toQLoop props
+let colour c = (ClassName (faceColour c) :> IProp)
 
 let halfWidth = width / 2.0
 let inset = 3.0
@@ -616,7 +702,7 @@ let nearCorner v1 v2 m n style =
   |> fun s -> sprintf "%s\n       L %f %f" s x1 y1
   |> fun s -> sprintf "%s\n       A %f %f 0 0 1 %f %f" s insetHalfWidth insetHalfWidth x2 y2
   |> loop
-  |> wrapPath style
+  |> wrapPath [(ClassName style :> IProp)]
 
 let nearCornerY = nearCorner (1.0 / 6.0) -0.5 id
 let nearCornerZ = nearCorner (5.0 / 6.0) (1.0 / 6.0) rot
@@ -659,12 +745,56 @@ let turnM turn =
   | FarZ -> mRotZ
   | FarX -> mRotX
 
-let render (model:Model) =
+let axisPointX = (FarZlane >> toScreen) { x = -1.0; y =  0.0; z =  0.0 }
+let axisPointY = (FarZlane >> toScreen) { x =  0.0; y = -1.0; z =  0.0 }
+let axisPointZ = (FarZlane >> toScreen) { x =  0.0; y =  0.0; z = -1.0 }
+
+let axisPointsFace a1 a2 n1 n2 f1 f2 =
+  [ [a1, f1; a2, f2]
+    [a1, f1]
+    [a2, f2]
+    []
+    [a1, f1; a2, n2]
+    [a2, n2]
+    [a2, f2; a1, n1]
+    [a1, n1]
+    [a1, n1; a2, n2]
+  ]
+
+let axisPointsNearY =
+  axisPointsFace axisPointX axisPointZ NearX NearZ FarX FarZ
+
+let axisPointsNearZ =
+  axisPointsFace axisPointY axisPointX NearY NearX FarY FarX
+
+let axisPointsNearX =
+  axisPointsFace axisPointZ axisPointY NearZ NearY FarZ FarY
+
+let axisPointsFarY =
+  axisPointsNearY
+
+let axisPointsFarZ =
+  axisPointsNearZ
+
+let axisPointsFarX =
+  axisPointsNearX
+
+let axisPoints =
+  [ yield! axisPointsNearY
+    yield! axisPointsNearZ
+    yield! axisPointsNearX
+    yield! axisPointsFarY
+    yield! axisPointsFarZ
+    yield! axisPointsFarX
+  ]
+  |> Array.ofList
+
+let render (model:Model) dispatch =
   match model.turning with
   | None ->
-      (paths3D, model.colouring)
-      ||> Array.zip
-      |> Array.map (fun (path, face) -> colour (face |> faceColour) path)
+      (paths3D, axisPoints, model.colouring)
+      |||> Array.zip3
+      |> Array.map (fun (path, axes, face) -> draw (colour face :: dragProps axes dispatch) path)
       |> fixCorners
       |> Array.toList
   | Some ({turn = turn; started = _; progress = p}) ->
@@ -673,7 +803,7 @@ let render (model:Model) =
       (paths3D, model.colouring)
       ||> Array.zip
       |> Array.mapi (fun i (p,f) -> if indices.[turn.face] |> Array.contains i then (p |> (turnM turn v |> mul |> List.map), f) else (p,f))
-      |> Array.map (fun (path, face) -> colour (face |> faceColour) path)
+      |> Array.map (fun (path, face) -> draw [colour face] path)
       |> fixCorners
       |> Array.toList
 
@@ -700,13 +830,14 @@ let smallArrow =
 
 let arrowsFarX dispatch turnLarge turnSmall =
   [ g
-      [ SVGAttr.Transform "translate(45,95),rotate(40,0,0)" //:> IProp
-        OnClick (fun _ -> dispatch turnLarge) //:> IProp
+      [ SVGAttr.Transform "translate(45,95),rotate(40,0,0)"
+        OnClick (fun _ -> dispatch turnLarge)
       ]
       [ path [ D largeArrow ] [] ]
     g
-      [ SVGAttr.Transform "translate(7,77),rotate(55,0,0)" :> IProp
-        OnClick (fun _ -> dispatch turnSmall) :> IProp ]
+      [ SVGAttr.Transform "translate(7,77),rotate(55,0,0)"
+        OnClick (fun _ -> dispatch turnSmall)
+      ]
       [ path [ D smallArrow ] [] ]
   ]
 
@@ -722,16 +853,16 @@ let arrows dispatch =
 let shortcutsFarX tInv largeCW largeCCW smallCW smallCCW =
   [ g
       [ SVGAttr.Transform ((15, 42, tInv) |||> sprintf "translate(%d,%d),%s") ]
-      [ text [ SVGAttr.TextAnchor "middle"; SVGAttr.Custom ("alignment-baseline", "middle"); Y 5.0 ] [ str smallCCW ] ]
+      [ text [ SVGAttr.TextAnchor "middle"; SVGAttr.Custom ("alignmentBaseline", "middle"); Y 5.0 ] [ str smallCCW ] ]
     g
       [ SVGAttr.Transform ((-15, 42, tInv) |||> sprintf "translate(%d,%d),%s") ]
-      [ text [ SVGAttr.TextAnchor "middle"; SVGAttr.Custom ("alignment-baseline", "middle"); Y 5.0 ] [ str smallCW ] ]
+      [ text [ SVGAttr.TextAnchor "middle"; SVGAttr.Custom ("alignmentBaseline", "middle"); Y 5.0 ] [ str smallCW ] ]
     g
       [ SVGAttr.Transform ((83, 86, tInv) |||> sprintf "translate(%d,%d),%s") ]
-      [ text [ SVGAttr.TextAnchor "middle"; SVGAttr.Custom ("alignment-baseline", "middle"); Y 5.0 ] [ str largeCCW ] ]
+      [ text [ SVGAttr.TextAnchor "middle"; SVGAttr.Custom ("alignmentBaseline", "middle"); Y 5.0 ] [ str largeCCW ] ]
     g
       [ SVGAttr.Transform ((-83, 86, tInv) |||> sprintf "translate(%d,%d),%s") ]
-      [ text [ SVGAttr.TextAnchor "middle"; SVGAttr.Custom ("alignment-baseline", "middle"); Y 5.0 ] [ str largeCW ] ]
+      [ text [ SVGAttr.TextAnchor "middle"; SVGAttr.Custom ("alignmentBaseline", "middle"); Y 5.0 ] [ str largeCW ] ]
   ]
 
 let shortcuts =
@@ -742,7 +873,7 @@ let shortcuts =
 
 let composition model (dispatch: Message -> unit) =
   [ g [ SVGAttr.Transform "translate(100,0)" ]
-      [ g [ ClassName "faces" ] (render model)
+      [ g [ ClassName "faces" ] (render model dispatch)
         g [ ClassName "arrows" ] (arrows dispatch)
         g [ ClassName "shortcuts" ] shortcuts ]
   ]
@@ -750,7 +881,7 @@ let composition model (dispatch: Message -> unit) =
 let view (model:Model) (dispatch: Dispatch<Message>) = 
   div [ Class "main" ]
     [ h1 [ Class "title" ] [ str "Flat Rubik's cube" ]
-      svg [ Class "centered"; SVGAttr.ViewBox <| sprintf "0 0 %d %d" 800 700 ] (composition model dispatch)
+      svg [ Id "flatCube"; Class "centered"; SVGAttr.ViewBox <| sprintf "0 0 %d %d" 800 700 ] (composition model dispatch)
       div [ Class "spacer" ] []
       button [ Class "centered"; OnClick (fun _ -> scramble dispatch) ] [ str "Scramble!" ]
     ]
@@ -759,6 +890,6 @@ let view (model:Model) (dispatch: Dispatch<Message>) =
 Program.mkSimple init update view
 |> Program.withSubscription timerSub
 |> Program.withSubscription keySub
-|> Program.withReact "elmish-app"
+|> Program.withReactBatched "elmish-app"
 |> Program.withConsoleTrace
 |> Program.run
