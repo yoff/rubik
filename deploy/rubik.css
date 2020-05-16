@@ -1,0 +1,57 @@
+h1.title {
+    display: block;
+    text-align: center;
+}
+
+.centered {
+    display: block;
+    margin: auto;
+}
+
+svg g.faces {
+    stroke: black;
+    stroke-width: 3;
+    width: 600;
+    height: 600;
+}
+
+svg g.faces path.NearY {
+    fill: green;
+}
+
+svg g.faces path.NearZ {
+    fill: orange;
+}
+
+svg g.faces path.NearX {
+    fill: purple;
+}
+
+svg g.faces path.FarY {
+    fill: red;
+}
+
+svg g.faces path.FarZ {
+    fill: blue;
+}
+
+svg g.faces path.FarX {
+    fill: yellow;
+}
+
+svg g.arrows {
+    fill: grey;
+    stroke: black;
+    stroke-width: 3;
+    width: 600;
+    height: 600;
+}
+
+svg line {
+    stroke: black;
+    stroke-width: 5;
+}
+
+.spacer {
+    margin-top: 1.5em;
+}
