@@ -50,3 +50,7 @@ svg g.arrows {
 .spacer {
     margin-top: 1.5em;
 }
+
+html, body{
+    overflow:hidden;
+}
